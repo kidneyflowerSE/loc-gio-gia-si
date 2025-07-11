@@ -10,10 +10,7 @@ const createDefaultAdmin = async () => {
       const defaultAdmin = new Admin({
         username: 'admin',
         email: 'admin@locgiogiasi.com',
-        password: '123456', // Will be hashed by the model
-        fullName: 'Administrator',
-        role: 'admin',
-        permissions: ['products', 'orders', 'blogs', 'users', 'settings', 'statistics']
+        password: '123456' // Will be hashed by the model
       });
       
       await defaultAdmin.save();

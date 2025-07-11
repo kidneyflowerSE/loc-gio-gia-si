@@ -9,7 +9,7 @@ const getSettings = async (req, res) => {
         if (!settings) {
             // Tạo cài đặt mặc định nếu chưa có
             settings = new Settings({
-                storeName: 'Cửa hàng lọc gió gia sỉ',
+                storeName: 'LocGioGiaSi',
                 address: 'Địa chỉ cửa hàng',
                 phone: '0123456789',
                 email: 'info@locgiogiasi.com'

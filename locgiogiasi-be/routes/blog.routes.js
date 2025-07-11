@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const blogController = require('../controller/blog.controller');
-const { authMiddleware, checkPermission } = require('../middleware/auth.middleware');
+const { authMiddleware } = require('../middleware/auth.middleware');
 const { uploadSingle, handleUploadError } = require('../middleware/upload.middleware');
 
 // Validation rules
@@ -32,10 +32,10 @@ router.get('/recent', blogController.getRecentBlogs);
 router.get('/:slug', blogController.getBlogBySlug);
 
 // Admin routes
-router.get('/admin/all', authMiddleware, checkPermission('blogs'), blogController.getBlogsAdmin);
-router.get('/admin/:id', authMiddleware, checkPermission('blogs'), blogController.getBlogById);
-router.post('/', authMiddleware, checkPermission('blogs'), uploadSingle, handleUploadError, createBlogValidation, blogController.createBlog);
-router.put('/:id', authMiddleware, checkPermission('blogs'), uploadSingle, handleUploadError, updateBlogValidation, blogController.updateBlog);
-router.delete('/:id', authMiddleware, checkPermission('blogs'), blogController.deleteBlog);
+router.get('/admin/all', authMiddleware, blogController.getBlogsAdmin);
+router.get('/admin/:id', authMiddleware, blogController.getBlogById);
+router.post('/', authMiddleware, uploadSingle, handleUploadError, createBlogValidation, blogController.createBlog);
+router.put('/:id', authMiddleware, uploadSingle, handleUploadError, updateBlogValidation, blogController.updateBlog);
+router.delete('/:id', authMiddleware, blogController.deleteBlog);
 
 module.exports = router;

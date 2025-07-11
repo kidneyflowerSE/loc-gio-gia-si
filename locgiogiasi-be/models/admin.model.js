@@ -22,19 +22,6 @@ const adminSchema = new mongoose.Schema({
     required: true,
     minLength: 6
   },
-  fullName: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  avatar: {
-    type: String,
-    default: ''
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
   lastLogin: {
     type: Date
   },

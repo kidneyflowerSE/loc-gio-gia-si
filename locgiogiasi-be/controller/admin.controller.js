@@ -40,14 +40,8 @@ const loginAdmin = async (req, res) => {
       });
     }
 
-    // Check if admin is active
-    if (!admin.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is disabled'
-      });
-    }
-
+    // Check if admin is active - This check is removed since isActive field no longer exists
+    
     // Check password
     const isPasswordCorrect = await admin.comparePassword(password);
     if (!isPasswordCorrect) {
@@ -72,11 +66,7 @@ const loginAdmin = async (req, res) => {
         admin: {
           id: admin._id,
           username: admin.username,
-          email: admin.email,
-          fullName: admin.fullName,
-          role: admin.role,
-          permissions: admin.permissions,
-          avatar: admin.avatar
+          email: admin.email
         }
       }
     });
@@ -117,11 +107,11 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const { fullName, email, avatar } = req.body;
+    const { email } = req.body;
 
     const admin = await Admin.findByIdAndUpdate(
       req.admin._id,
-      { fullName, email, avatar, updatedAt: Date.now() },
+      { email, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
 
@@ -194,15 +184,25 @@ const createAdmin = async (req, res) => {
       });
     }
 
-    // Check if current user is super admin
-    if (req.admin.role !== 'admin') {
-      return res.status(403).json({
+    // Check if username or email already exists
+    const { username, email, password } = req.body;
+    
+    const existingAdmin = await Admin.findOne({
+      $or: [{ username }, { email }]
+    });
+
+    if (existingAdmin) {
+      return res.status(400).json({
         success: false,
-        message: 'Only super admin can create new admins'
+        message: 'Username or email already exists'
       });
     }
 
-    const admin = new Admin(req.body);
+    const admin = new Admin({
+      username,
+      email,
+      password
+    });
     await admin.save();
 
     res.status(201).json({
@@ -222,36 +222,17 @@ const createAdmin = async (req, res) => {
 // Get all admins
 const getAdmins = async (req, res) => {
   try {
-    // Check if current user is super admin
-    if (req.admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only super admin can view all admins'
-      });
-    }
-
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     const filter = {};
     
-    // Status filter
-    if (req.query.status) {
-      filter.isActive = req.query.status === 'active';
-    }
-
-    // Role filter
-    if (req.query.role) {
-      filter.role = req.query.role;
-    }
-
     // Search filter
     if (req.query.search) {
       filter.$or = [
         { username: { $regex: req.query.search, $options: 'i' } },
-        { email: { $regex: req.query.search, $options: 'i' } },
-        { fullName: { $regex: req.query.search, $options: 'i' } }
+        { email: { $regex: req.query.search, $options: 'i' } }
       ];
     }
 
@@ -286,14 +267,6 @@ const getAdmins = async (req, res) => {
 // Update admin
 const updateAdmin = async (req, res) => {
   try {
-    // Check if current user is super admin
-    if (req.admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only super admin can update admins'
-      });
-    }
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -333,14 +306,6 @@ const updateAdmin = async (req, res) => {
 // Delete admin
 const deleteAdmin = async (req, res) => {
   try {
-    // Check if current user is super admin
-    if (req.admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only super admin can delete admins'
-      });
-    }
-
     // Prevent deleting self
     if (req.admin._id.toString() === req.params.id) {
       return res.status(400).json({

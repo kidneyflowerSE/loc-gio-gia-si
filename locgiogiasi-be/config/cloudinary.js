@@ -12,7 +12,7 @@ cloudinary.config({
 const uploadToCloudinary = async (file, folder = 'products') => {
     try {
         const result = await cloudinary.uploader.upload(file.path, {
-            folder: `loc-gio-gia-si/${folder}`,
+            folder: `locgiogiasi/${folder}`,
             transformation: [
                 { width: 800, height: 600, crop: 'limit' },
                 { quality: 'auto' },

@@ -60,24 +60,14 @@ const orderSchema = new mongoose.Schema({
       min: 0
     }
   }],
-  totalAmount: {
-    type: Number,
-    required: true,
-    min: 0
-  },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'processing', 'completed', 'cancelled'],
-    default: 'pending'
+    enum: ['contacted', 'not contacted'],
+    default: 'not contacted'
   },
   notes: {
     type: String,
     trim: true
-  },
-  paymentMethod: {
-    type: String,
-    enum: ['cash', 'bank_transfer'],
-    default: 'cash'
   },
   orderDate: {
     type: Date,
@@ -89,14 +79,51 @@ const orderSchema = new mongoose.Schema({
   }
 });
 
+// Virtual field for total amount
+orderSchema.virtual('totalAmount').get(function() {
+  return this.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+});
+
+// Virtual field for total items count
+orderSchema.virtual('totalItems').get(function() {
+  return this.items.reduce((total, item) => total + item.quantity, 0);
+});
+
+// Ensure virtual fields are serialized
+orderSchema.set('toJSON', { virtuals: true });
+orderSchema.set('toObject', { virtuals: true });
+
 // Generate order number
-orderSchema.pre('save', function(next) {
+orderSchema.pre('save', async function(next) {
   if (!this.orderNumber) {
     const date = new Date();
     const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
-    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    this.orderNumber = `ORD${dateString}${random}`;
+    let orderNumber;
+    let isUnique = false;
+    let attempts = 0;
+    
+    // Ensure unique order number
+    while (!isUnique && attempts < 10) {
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      orderNumber = `ORD-${dateString}-${random}`;
+      
+      const existingOrder = await this.constructor.findOne({ orderNumber });
+      if (!existingOrder) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+    
+    if (isUnique) {
+      this.orderNumber = orderNumber;
+    } else {
+      // Fallback to timestamp-based number if random fails
+      this.orderNumber = `ORD-${dateString}-${Date.now().toString().slice(-6)}`;
+    }
   }
+  
+  // Update updatedAt
+  this.updatedAt = new Date();
   next();
 });
 

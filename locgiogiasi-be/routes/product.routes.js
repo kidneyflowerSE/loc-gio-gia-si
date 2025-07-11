@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const productController = require('../controller/product.controller');
 const { uploadMultiple, handleUploadError, cleanupTempFiles } = require('../middleware/upload.middleware');
-const { authenticateToken } = require('../middleware/auth.middleware');
+const { authMiddleware } = require('../middleware/auth.middleware');
 const { body } = require('express-validator');
 
 // Validation middleware
@@ -10,10 +10,8 @@ const validateProduct = [
     body('name').notEmpty().withMessage('Tên sản phẩm là bắt buộc'),
     body('code').notEmpty().withMessage('Mã lọc là bắt buộc'),
     body('brand').notEmpty().withMessage('Hãng xe là bắt buộc'),
-    body('carModels').notEmpty().withMessage('Dòng xe là bắt buộc'),
-    body('year').isInt({ min: 1900, max: new Date().getFullYear() + 5 }).withMessage('Năm không hợp lệ'),
+    body('compatibleModels').optional().isArray().withMessage('Danh sách dòng xe tương thích phải là mảng'),
     body('price').isFloat({ min: 0 }).withMessage('Giá bán phải là số dương'),
-    body('costPrice').isFloat({ min: 0 }).withMessage('Giá vốn phải là số dương'),
     body('description').notEmpty().withMessage('Mô tả là bắt buộc'),
     body('stock').isInt({ min: 0 }).withMessage('Số lượng tồn phải là số nguyên không âm')
 ];
@@ -22,12 +20,13 @@ const validateProduct = [
 router.get('/', productController.getAllProducts);
 router.get('/search/:code', productController.searchByCode);
 router.get('/brand/:brand', productController.getProductsByBrand);
+router.get('/brand/:brandId/car-models', productController.getCompatibleModelsByBrand);
 router.get('/car-model/:carModel', productController.getProductsByCarModel);
 router.get('/:id', productController.getProductById);
 
 // Routes quản trị (cần xác thực)
 router.post('/', 
-    authenticateToken, 
+    authMiddleware, 
     uploadMultiple, 
     cleanupTempFiles,
     validateProduct,
@@ -36,7 +35,7 @@ router.post('/',
 );
 
 router.put('/:id', 
-    authenticateToken, 
+    authMiddleware, 
     uploadMultiple, 
     cleanupTempFiles,
     validateProduct,
@@ -45,12 +44,12 @@ router.put('/:id',
 );
 
 router.delete('/:id', 
-    authenticateToken, 
+    authMiddleware, 
     productController.deleteProduct
 );
 
 router.patch('/:id/status', 
-    authenticateToken, 
+    authMiddleware, 
     productController.updateProductStatus
 );
 

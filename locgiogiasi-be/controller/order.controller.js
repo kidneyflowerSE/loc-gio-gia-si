@@ -1,11 +1,10 @@
 const Order = require('../models/order.model');
 const Product = require('../models/product.model');
-const Cart = require('../models/cart.model');
 const nodemailer = require('nodemailer');
 const { validationResult } = require('express-validator');
 
 // Configure nodemailer
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   service: 'gmail', // or your email service
   auth: {
     user: process.env.EMAIL_USER,
@@ -13,7 +12,7 @@ const transporter = nodemailer.createTransporter({
   }
 });
 
-// Create new order (quote request)
+// Create order from product list (new way to create orders)
 const createOrder = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -25,22 +24,45 @@ const createOrder = async (req, res) => {
       });
     }
 
-    // Create order with validated data from middleware
+    const validatedItems = req.validatedItems;
+    
+    if (!validatedItems || validatedItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid items provided for the order'
+      });
+    }
+
+    // Create order from provided items
     const orderData = {
       customer: req.body.customer,
-      items: req.validatedItems,
-      totalAmount: req.totalAmount,
+      items: validatedItems.map(item => ({
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price
+      })),
       notes: req.body.notes,
       paymentMethod: req.body.paymentMethod || 'cash'
     };
 
     const order = new Order(orderData);
-    await order.save();
-
-    // Mark cart as converted if cart exists
-    if (req.cart) {
-      await req.cart.convertToOrder();
+    
+    // Ensure orderNumber is generated before saving
+    if (!order.orderNumber) {
+      const date = new Date();
+      const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+      order.orderNumber = `ORD-${dateString}-${random}`;
     }
+    
+    console.log('Creating order with data:', {
+      orderNumber: order.orderNumber,
+      customerEmail: req.body.customer.email,
+      itemsCount: order.items.length
+    });
+    
+    await order.save();
+    console.log('Order saved successfully:', order.orderNumber);
 
     // Populate product details for email
     await order.populate('items.product', 'name brand model year price images');
@@ -62,6 +84,29 @@ const createOrder = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Error creating order:', error);
+    
+    // Handle specific validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Order validation failed',
+        errors: Object.keys(error.errors).map(key => ({
+          field: key,
+          message: error.errors[key].message
+        }))
+      });
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order number already exists. Please try again.',
+        error: 'Duplicate order number'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Error creating order',
@@ -70,93 +115,15 @@ const createOrder = async (req, res) => {
   }
 };
 
-// Create order from cart
-const createOrderFromCart = async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation errors',
-        errors: errors.array()
-      });
-    }
-
-    const cart = req.cart;
-    
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cart is empty'
-      });
-    }
-
-    // Populate cart items with product details
-    await cart.populate('items.product', 'name brand model year price images status');
-
-    // Validate all items are still available
-    for (const item of cart.items) {
-      if (!item.product || item.product.status !== 'available') {
-        return res.status(400).json({
-          success: false,
-          message: `Product ${item.product?.name || 'Unknown'} is no longer available`
-        });
-      }
-    }
-
-    // Create order from cart items
-    const orderData = {
-      customer: req.body.customer,
-      items: cart.items.map(item => ({
-        product: item.product._id,
-        quantity: item.quantity,
-        price: item.product.price // Use current price from product
-      })),
-      totalAmount: cart.items.reduce((sum, item) => sum + (item.quantity * item.product.price), 0),
-      notes: req.body.notes,
-      paymentMethod: req.body.paymentMethod || 'cash'
-    };
-
-    const order = new Order(orderData);
-    await order.save();
-
-    // Mark cart as converted
-    await cart.convertToOrder();
-
-    // Populate product details for email
-    await order.populate('items.product', 'name brand model year price images');
-
-    // Send email notification
-    try {
-      await sendOrderNotification(order);
-    } catch (emailError) {
-      console.error('Email sending failed:', emailError);
-      // Don't fail the order creation if email fails
-    }
-
-    res.status(201).json({
-      success: true,
-      message: 'Order created successfully from cart. We will contact you soon for quotation.',
-      data: {
-        orderNumber: order.orderNumber,
-        order: order
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error creating order from cart',
-      error: error.message
-    });
-  }
-};
+// Legacy function name for backward compatibility (now same as createOrder)
+const createOrderFromCart = createOrder;
 
 // Send order notification email
 const sendOrderNotification = async (order) => {
   const customerEmail = {
     from: process.env.EMAIL_USER,
     to: order.customer.email,
-    subject: `Xác nhận đơn hàng #${order.orderNumber} - Lốc Gio Gia Sĩ`,
+    subject: `Xác nhận đơn hàng #${order.orderNumber} - LocGioGiaSi`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Cảm ơn bạn đã gửi yêu cầu báo giá!</h2>
@@ -192,14 +159,6 @@ const sendOrderNotification = async (order) => {
         </div>
 
         <p>Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất để cung cấp báo giá chi tiết.</p>
-        
-        <div style="background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-top: 20px;">
-          <p style="margin: 0; color: #6c757d;">
-            <strong>Lốc Gio Gia Sĩ</strong><br>
-            Hotline: 0123.456.789<br>
-            Email: info@locgiogiasi.com
-          </p>
-        </div>
       </div>
     `
   };
@@ -208,7 +167,7 @@ const sendOrderNotification = async (order) => {
   const adminEmail = {
     from: process.env.EMAIL_USER,
     to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
-    subject: `Đơn hàng mới #${order.orderNumber} - Lốc Gio Gia Sĩ`,
+    subject: `Đơn hàng mới #${order.orderNumber} - LocGioGiaSi`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #dc3545;">Đơn hàng mới cần xử lý!</h2>

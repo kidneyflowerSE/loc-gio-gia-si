@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -9,7 +10,6 @@ const connectDatabase = require('./config/database');
 const { createUploadsDirectory } = require('./utils/createDirectories');
 const { createTempUploadDirectory } = require('./utils/createTempDirectory');
 const { createDefaultAdmin } = require('./utils/createDefaultAdmin');
-const { scheduleCartCleanup } = require('./utils/scheduleCleanup');
 
 // Import routes and middleware
 const routes = require('./routes');
@@ -27,14 +27,11 @@ connectDatabase();
 // Create default admin after database connection
 setTimeout(createDefaultAdmin, 2000);
 
-// Schedule cart cleanup
-scheduleCartCleanup();
-
 // Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true
-}));
+// app.use(cors({
+//   origin: process.env.CORS_ORIGIN || '*',
+//   credentials: true
+// }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -50,7 +47,7 @@ app.use('/api', routes);
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to Lốc Gio Gia Sĩ API',
+    message: 'Welcome to LocGioGiaSi API',
     version: '1.0.0',
     documentation: '/api'
   });

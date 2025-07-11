@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const statisticsController = require('../controller/statistics.controller');
-const { authMiddleware, checkPermission } = require('../middleware/auth.middleware');
+const { authMiddleware } = require('../middleware/auth.middleware');
 
-// Admin routes - all statistics require authentication and statistics permission
-router.get('/dashboard', authMiddleware, checkPermission('statistics'), statisticsController.getDashboardStats);
-router.get('/products', authMiddleware, checkPermission('statistics'), statisticsController.getProductStats);
-router.get('/orders', authMiddleware, checkPermission('statistics'), statisticsController.getOrderStats);
-router.get('/blogs', authMiddleware, checkPermission('statistics'), statisticsController.getBlogStats);
+// Admin routes - all statistics require authentication
+router.get('/dashboard', authMiddleware, statisticsController.getDashboardStats);
+router.get('/products', authMiddleware, statisticsController.getProductStats);
+router.get('/orders', authMiddleware, statisticsController.getOrderStats);
+router.get('/contacts', authMiddleware, statisticsController.getContactStats);
 
 module.exports = router;

@@ -25,11 +25,11 @@ const getAllProducts = async (req, res) => {
         }
         
         if (year) {
-            filter.year = year;
+            filter['compatibleModels.years'] = year;
         }
         
         if (carModel) {
-            filter.carModels = { $in: [carModel] };
+            filter['compatibleModels.carModelName'] = { $regex: carModel, $options: 'i' };
         }
         
         // Thực hiện query
@@ -96,7 +96,7 @@ const createProduct = async (req, res) => {
             });
         }
         
-        const { name, code, brand, carModels, year, price, costPrice, description, stock, specifications, tags } = req.body;
+        const { name, code, brand, compatibleModels, price, description, stock, specifications, tags } = req.body;
         
         // Xử lý upload ảnh lên Cloudinary
         let images = [];
@@ -116,10 +116,8 @@ const createProduct = async (req, res) => {
             name,
             code,
             brand,
-            carModels: Array.isArray(carModels) ? carModels : [carModels],
-            year,
+            compatibleModels: compatibleModels ? JSON.parse(compatibleModels) : [],
             price,
-            costPrice,
             description,
             stock: stock || 0,
             images,
@@ -156,7 +154,7 @@ const updateProduct = async (req, res) => {
         }
         
         const productId = req.params.id;
-        const { name, code, brand, carModels, year, price, costPrice, description, stock, specifications, tags, removeImages } = req.body;
+        const { name, code, brand, compatibleModels, price, description, stock, specifications, tags, removeImages } = req.body;
         
         const product = await Product.findById(productId);
         if (!product) {
@@ -194,10 +192,8 @@ const updateProduct = async (req, res) => {
         if (name) product.name = name;
         if (code) product.code = code;
         if (brand) product.brand = brand;
-        if (carModels) product.carModels = Array.isArray(carModels) ? carModels : [carModels];
-        if (year) product.year = year;
+        if (compatibleModels) product.compatibleModels = JSON.parse(compatibleModels);
         if (price) product.price = price;
-        if (costPrice) product.costPrice = costPrice;
         if (description) product.description = description;
         if (stock !== undefined) product.stock = stock;
         if (specifications) product.specifications = JSON.parse(specifications);
@@ -318,12 +314,18 @@ const getProductsByCarModel = async (req, res) => {
         const { carModel } = req.params;
         const { page = 1, limit = 10 } = req.query;
         
-        const products = await Product.find({ carModels: { $in: [carModel] }, isActive: true })
+        const products = await Product.find({ 
+                'compatibleModels.carModelName': { $regex: carModel, $options: 'i' }, 
+                isActive: true 
+            })
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .sort({ createdAt: -1 });
         
-        const total = await Product.countDocuments({ carModels: { $in: [carModel] }, isActive: true });
+        const total = await Product.countDocuments({ 
+            'compatibleModels.carModelName': { $regex: carModel, $options: 'i' }, 
+            isActive: true 
+        });
         
         res.json({
             success: true,
@@ -377,6 +379,39 @@ const updateProductStatus = async (req, res) => {
     }
 };
 
+// Helper function để lấy compatible models từ brand
+const getCompatibleModelsByBrand = async (req, res) => {
+    try {
+        const { brandId } = req.params;
+        const Brand = require('../models/brand.model');
+        
+        const brand = await Brand.findById(brandId);
+        if (!brand) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy hãng xe'
+            });
+        }
+
+        const activeCarModels = brand.carModels.filter(model => model.isActive);
+        
+        res.json({
+            success: true,
+            data: {
+                brandId: brand._id,
+                brandName: brand.name,
+                carModels: activeCarModels
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khi lấy danh sách dòng xe',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getAllProducts,
     getProductById,
@@ -386,5 +421,6 @@ module.exports = {
     searchByCode,
     getProductsByBrand,
     getProductsByCarModel,
-    updateProductStatus
+    updateProductStatus,
+    getCompatibleModelsByBrand
 };

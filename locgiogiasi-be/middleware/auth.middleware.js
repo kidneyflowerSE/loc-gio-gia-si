@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
     
     // Find admin
     const admin = await Admin.findById(decoded.id);
-    if (!admin || !admin.isActive) {
+    if (!admin) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token or admin not found'
@@ -44,25 +44,4 @@ const authMiddleware = async (req, res, next) => {
   }
 };
 
-// Check permissions middleware
-const checkPermission = (permission) => {
-  return (req, res, next) => {
-    if (!req.admin) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
-    }
-
-    if (req.admin.role === 'admin' || req.admin.permissions.includes(permission)) {
-      next();
-    } else {
-      return res.status(403).json({
-        success: false,
-        message: 'Insufficient permissions'
-      });
-    }
-  };
-};
-
-module.exports = { authMiddleware, checkPermission };
+module.exports = { authMiddleware };

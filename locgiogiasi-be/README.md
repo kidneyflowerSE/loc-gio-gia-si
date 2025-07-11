@@ -1,11 +1,11 @@
-# Lốc Gio Gia Sĩ Backend API
+# LocGioGiaSi Backend API
 
-Backend API cho website bán lốc gio gia sĩ xe hơi.
+Backend API cho website bán locgiogiasi xe hơi.
 
 ## Tính năng chính
 
-### 1. Quản lý sản phẩm lọc gió
-- CRUD sản phẩm lọc gió ô tô
+### 1. Quản lý sản phẩm locgiogiasi
+- CRUD sản phẩm locgiogiasi ô tô
 - Bộ lọc theo hãng xe, dòng xe, năm sản xuất, giá
 - Tìm kiếm theo tên, mã lọc
 - Upload hình ảnh sản phẩm lên Cloudinary
@@ -17,29 +17,23 @@ Backend API cho website bán lốc gio gia sĩ xe hơi.
 - Tag hệ thống
 - Blog nổi bật
 
-### 3. Quản lý giỏ hàng
-- Giỏ hàng ảo cho mỗi thiết bị
-- Thêm/xóa/cập nhật sản phẩm
-- Đồng bộ giỏ hàng
-- Tự động dọn dẹp giỏ hàng hết hạn
-
-### 4. Quản lý đơn hàng
-- Tạo đơn hàng từ giỏ hàng
+### 3. Quản lý đơn hàng
+- Tạo đơn hàng trực tiếp từ danh sách sản phẩm
 - Gửi email báo giá
 - Quản lý trạng thái đơn hàng
 - Thống kê đơn hàng
 
-### 5. Hệ thống quản trị
+### 4. Hệ thống quản trị
 - Đăng nhập admin
 - Phân quyền người dùng
 - Quản lý admin accounts
 
-### 6. Liên hệ
+### 4. Liên hệ
 - Form liên hệ
 - Gửi email tự động
 - Quản lý tin nhắn liên hệ
 
-### 7. Thống kê
+### 5. Thống kê
 - Dashboard thống kê
 - Báo cáo sản phẩm
 - Báo cáo đơn hàng
@@ -93,6 +87,45 @@ npm run dev
 npm start
 ```
 
+### Khởi tạo dữ liệu mẫu (Seed Data)
+
+Hệ thống cung cấp script để khởi tạo dữ liệu mẫu:
+
+```bash
+# Khởi tạo tất cả dữ liệu mẫu (brands, products, blogs, settings)
+npm run seed
+
+# Khởi tạo chỉ brands
+npm run seed:brands
+
+# Khởi tạo chỉ products
+npm run seed:products
+```
+
+### Migration (Di chuyển dữ liệu)
+
+Nếu bạn đang nâng cấp từ phiên bản cũ có giỏ hàng, hãy chạy script migration:
+
+```bash
+# Xóa dữ liệu cart và cập nhật cấu trúc database
+npm run migrate:remove-cart
+```
+
+**Script migration sẽ:**
+- Xóa toàn bộ dữ liệu cart từ database
+- Drop collection `carts`
+- Loại bỏ reference đến cart trong orders
+- Cập nhật cấu trúc database phù hợp với quy trình mới
+
+**Dữ liệu mẫu bao gồm:**
+- 6 hãng xe phổ biến: Toyota, Honda, Hyundai, Mazda, Kia, Ford
+- Mỗi hãng có 5 dòng xe với các năm sản xuất
+- 5 sản phẩm locgiogiasi mẫu với đầy đủ thông tin
+- 2 blog posts mẫu
+- Cấu hình website mặc định
+
+⚠️ **Lưu ý**: Lệnh seed sẽ xóa toàn bộ dữ liệu cũ và tạo mới!
+
 ## Mô hình Database
 
 Hệ thống sử dụng MongoDB với các collection chính sau:
@@ -101,45 +134,37 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
 
 ```
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│     PRODUCTS    │       │      CARTS      │       │     ORDERS      │
+│     PRODUCTS    │       │     ORDERS      │       │      BLOGS      │
 ├─────────────────┤       ├─────────────────┤       ├─────────────────┤
-│ _id: ObjectId   │ ◄─┐   │ _id: ObjectId   │       │ _id: ObjectId   │
-│ name: String    │   │   │ sessionId: String│       │ orderNumber: String│
-│ brand: String   │   │   │ fingerprint: String│     │ customer: Object│
-│ model: String   │   │   │ items: [        │       │ items: [        │
-│ year: Number    │   │   │   product: ObjectId │ ◄─┼─┤   product: ObjectId │
-│ price: Number   │   │   │   quantity: Number │     │   quantity: Number │
-│ description: String│ │   │   price: Number │       │   price: Number │
-│ specifications: Obj│ │   │   totalPrice: Number│   │   totalPrice: Number│
-│ images: [String]│   │   │ ]               │       │ ]               │
-│ featured: Boolean│  │   │ totalAmount: Number│    │ totalAmount: Number│
-│ status: String  │   │   │ totalItems: Number│     │ status: String  │
-│ views: Number   │   │   │ status: String  │       │ paymentMethod: String│
-│ createdAt: Date │   │   │ expiresAt: Date │       │ orderDate: Date │
-│ updatedAt: Date │   │   │ createdAt: Date │       │ updatedAt: Date │
-└─────────────────┘   │   └─────────────────┘       └─────────────────┘
-                      │                                       
-┌─────────────────┐   │   ┌─────────────────┐       ┌─────────────────┐
-│      BLOGS      │   │   │     ADMINS      │       │    CONTACTS     │
-├─────────────────┤   │   ├─────────────────┤       ├─────────────────┤
-│ _id: ObjectId   │   │   │ _id: ObjectId   │       │ _id: ObjectId   │
-│ title: String   │   │   │ username: String│       │ name: String    │
-│ slug: String    │   │   │ email: String   │       │ email: String   │
-│ content: String │   │   │ password: String│       │ phone: String   │
-│ excerpt: String │   │   │ fullName: String│       │ subject: String │
-│ featuredImage: String│ │ │ role: String    │       │ message: String │
-│ author: String  │   │   │ permissions: [String]│  │ status: String  │
-│ category: String│   │   │ avatar: String  │       │ reply: String   │
-│ tags: [String]  │   │   │ isActive: Boolean│      │ repliedAt: Date │
-│ status: String  │   │   │ lastLogin: Date │       │ repliedBy: String│
-│ views: Number   │   │   │ createdAt: Date │       │ createdAt: Date │
-│ featured: Boolean│  │   │ updatedAt: Date │       │ updatedAt: Date │
-│ publishDate: Date│  │   └─────────────────┘       └─────────────────┘
-│ createdAt: Date │   │                              
-│ updatedAt: Date │   │                              
-└─────────────────┘   │                              
-                      │                              
-                      └─ REFERENCE (ObjectId)        
+│ _id: ObjectId   │       │ _id: ObjectId   │       │ _id: ObjectId   │
+│ name: String    │       │ orderNumber: String│     │ title: String   │
+│ brand: String   │       │ customer: Object│       │ slug: String    │
+│ model: String   │       │ items: [        │       │ content: String │
+│ year: Number    │       │   product: ObjectId │ ◄─┤ excerpt: String │
+│ price: Number   │       │   quantity: Number │     │ featuredImage: String│
+│ description: String│     │   price: Number │       │ author: String  │
+│ specifications: Obj│     │   totalPrice: Number│   │ category: String│
+│ images: [String]│       │ ]               │       │ tags: [String]  │
+│ featured: Boolean│      │ totalAmount: Number│    │ status: String  │
+│ status: String  │       │ status: String  │       │ featured: Boolean│
+│ createdAt: Date │       │ paymentMethod: String│  │ publishDate: Date│
+│ updatedAt: Date │       │ orderDate: Date │       │ createdAt: Date │
+└─────────────────┘       └─────────────────┘       │ updatedAt: Date │
+                                                    └─────────────────┘
+                                                                      
+┌─────────────────┐       ┌─────────────────┐                      
+│     ADMINS      │       │    BRANDS       │                      
+├─────────────────┤       ├─────────────────┤                      
+│ _id: ObjectId   │       │ _id: ObjectId   │                      
+│ username: String│       │ name: String    │                      
+│ email: String   │       │ logo: String    │                      
+│ password: String│       │ description: String│                   
+│ lastLogin: Date │       │ isActive: Boolean│                     
+│ createdAt: Date │       │ createdAt: Date │                      
+│ updatedAt: Date │       │ updatedAt: Date │                      
+│ createdAt: Date │                                                
+│ updatedAt: Date │                                                
+└─────────────────┘        
 ```
 
 ### 📋 **Collection Details**
@@ -149,12 +174,11 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
 {
   _id: ObjectId,
   name: String,              // Tên sản phẩm
-  filterCode: String,        // Mã lọc (unique)
+  code: String,              // Mã lọc (unique)
   brand: String,             // Hãng xe
   carModels: [String],       // Các dòng xe phù hợp
   year: Number,              // Năm sản xuất
   price: Number,             // Giá bán
-  costPrice: Number,         // Giá vốn
   description: String,       // Mô tả
   images: [{
     public_id: String,       // Cloudinary public ID
@@ -164,7 +188,7 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
     alt: String              // Alt text
   }],
   stock: Number,             // Số lượng tồn kho
-  category: String,          // Danh mục (default: 'Lọc gió')
+  category: String,          // Danh mục (default: 'LocGioGiaSi')
   specifications: Map,       // Thông số kỹ thuật
   tags: [String],            // Tag cho SEO
   isActive: Boolean,         // Trạng thái kích hoạt
@@ -173,32 +197,7 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
 }
 ```
 
-#### **2. Carts Collection (Giỏ hàng ảo)**
-```javascript
-{
-  _id: ObjectId,
-  sessionId: String,         // ID phiên làm việc
-  fingerprint: String,       // Dấu vân tay thiết bị
-  items: [{
-    product: ObjectId,       // Tham chiếu đến Products
-    quantity: Number,        // Số lượng
-    price: Number,           // Giá tại thời điểm thêm vào
-    totalPrice: Number,      // Tổng giá (quantity * price)
-    addedAt: Date           // Thời gian thêm vào
-  }],
-  totalAmount: Number,       // Tổng tiền toàn bộ giỏ hàng
-  totalItems: Number,        // Tổng số sản phẩm
-  status: String,            // active/abandoned/converted
-  userAgent: String,         // Thông tin trình duyệt
-  ipAddress: String,         // Địa chỉ IP
-  lastActivity: Date,        // Hoạt động cuối cùng
-  expiresAt: Date,           // Thời gian hết hạn (30 ngày)
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-#### **3. Orders Collection**
+#### **2. Orders Collection**
 ```javascript
 {
   _id: ObjectId,
@@ -221,13 +220,13 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
   totalAmount: Number,       // Tổng tiền đơn hàng
   status: String,            // pending/confirmed/processing/completed/cancelled
   notes: String,             // Ghi chú của khách hàng
-  paymentMethod: String,     // cash/bank_transfer/installment
+  paymentMethod: String,     // cash/bank_transfer
   orderDate: Date,           // Ngày đặt hàng
   updatedAt: Date
 }
 ```
 
-#### **4. Blogs Collection**
+#### **3. Blogs Collection**
 ```javascript
 {
   _id: ObjectId,
@@ -240,7 +239,6 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
   category: String,          // Danh mục
   tags: [String],            // Tags
   status: String,            // draft/published/archived
-  views: Number,             // Số lượt xem
   featured: Boolean,         // Bài viết nổi bật
   publishDate: Date,         // Ngày xuất bản
   createdAt: Date,
@@ -248,37 +246,14 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
 }
 ```
 
-#### **5. Admins Collection**
+#### **4. Admins Collection**
 ```javascript
 {
   _id: ObjectId,
   username: String,          // Tên đăng nhập (unique)
   email: String,             // Email (unique)
   password: String,          // Mật khẩu đã hash
-  fullName: String,          // Họ tên đầy đủ
-  role: String,              // admin/manager/editor
-  permissions: [String],     // ['products', 'orders', 'blogs', 'users', 'settings', 'statistics']
-  avatar: String,            // URL avatar
-  isActive: Boolean,         // Trạng thái hoạt động
   lastLogin: Date,           // Lần đăng nhập cuối
-  createdAt: Date,
-  updatedAt: Date
-}
-```
-
-#### **6. Contacts Collection**
-```javascript
-{
-  _id: ObjectId,
-  name: String,              // Tên người liên hệ
-  email: String,             // Email
-  phone: String,             // Số điện thoại
-  subject: String,           // Chủ đề
-  message: String,           // Nội dung tin nhắn
-  status: String,            // new/read/replied/closed
-  reply: String,             // Nội dung phản hồi
-  repliedAt: Date,           // Thời gian phản hồi
-  repliedBy: String,         // Người phản hồi
   createdAt: Date,
   updatedAt: Date
 }
@@ -286,29 +261,22 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
 
 ### 🔗 **Relationships (Mối quan hệ)**
 
-1. **Products ↔ Carts**: Một sản phẩm có thể có trong nhiều giỏ hàng
-2. **Products ↔ Orders**: Một sản phẩm có thể có trong nhiều đơn hàng
-3. **Carts → Orders**: Giỏ hàng có thể được chuyển thành đơn hàng
-4. **Admins → Blogs**: Admin tạo và quản lý blog posts
-5. **Admins → Contacts**: Admin phản hồi tin nhắn liên hệ
+1. **Products ↔ Orders**: Một sản phẩm có thể có trong nhiều đơn hàng
+2. **Brands ↔ Products**: Một thương hiệu có thể có nhiều sản phẩm
+3. **Admins → Blogs**: Admin tạo và quản lý blog posts
 
 ### 📈 **Indexes (Chỉ mục)**
 
 ```javascript
 // Products
-db.products.createIndex({ "name": "text", "description": "text", "tags": "text", "filterCode": "text" })
+db.products.createIndex({ "name": "text", "description": "text", "tags": "text", "code": "text" })
 db.products.createIndex({ "category": 1 })
 db.products.createIndex({ "brand": 1 })
 db.products.createIndex({ "price": 1 })
 db.products.createIndex({ "isActive": 1 })
-db.products.createIndex({ "filterCode": 1 })
+db.products.createIndex({ "code": 1 })
 db.products.createIndex({ "carModels": 1 })
 db.products.createIndex({ "year": 1 })
-
-// Carts
-db.carts.createIndex({ "sessionId": 1, "fingerprint": 1 })
-db.carts.createIndex({ "expiresAt": 1 }, { expireAfterSeconds: 0 })
-db.carts.createIndex({ "lastActivity": 1 })
 
 // Orders
 db.orders.createIndex({ "orderNumber": 1 })
@@ -326,9 +294,9 @@ db.blogs.createIndex({ "publishDate": -1 })
 db.admins.createIndex({ "username": 1 })
 db.admins.createIndex({ "email": 1 })
 
-// Contacts
-db.contacts.createIndex({ "status": 1 })
-db.contacts.createIndex({ "createdAt": -1 })
+// Brands
+db.brands.createIndex({ "name": 1 })
+db.brands.createIndex({ "isActive": 1 })
 ```
 
 ## API Endpoints
@@ -336,7 +304,7 @@ db.contacts.createIndex({ "createdAt": -1 })
 ### Sản phẩm
 - `GET /api/products` - Lấy danh sách sản phẩm
 - `GET /api/products/:id` - Lấy chi tiết sản phẩm
-- `GET /api/products/search/:filterCode` - Tìm kiếm theo mã lọc
+- `GET /api/products/search/:code` - Tìm kiếm theo mã lọc
 - `GET /api/products/brand/:brand` - Lấy sản phẩm theo hãng xe
 - `GET /api/products/car-model/:carModel` - Lấy sản phẩm theo dòng xe
 - `POST /api/products` - Tạo sản phẩm mới (Admin)
@@ -344,22 +312,13 @@ db.contacts.createIndex({ "createdAt": -1 })
 - `DELETE /api/products/:id` - Xóa sản phẩm (Admin)
 - `PATCH /api/products/:id/status` - Cập nhật trạng thái sản phẩm (Admin)
 
-### Giỏ hàng
-- `GET /api/cart` - Lấy thông tin giỏ hàng
-- `GET /api/cart/summary` - Lấy tóm tắt giỏ hàng
-- `POST /api/cart/add` - Thêm sản phẩm vào giỏ hàng
-- `PUT /api/cart/update` - Cập nhật số lượng sản phẩm
-- `DELETE /api/cart/remove/:productId` - Xóa sản phẩm khỏi giỏ hàng
-- `DELETE /api/cart/clear` - Xóa toàn bộ giỏ hàng
-- `POST /api/cart/sync` - Đồng bộ giỏ hàng
-
 ### Đơn hàng
-- `POST /api/orders` - Tạo đơn hàng mới
-- `POST /api/orders/from-cart` - Tạo đơn hàng từ giỏ hàng
-- `GET /api/orders/track/:orderNumber` - Theo dõi đơn hàng
+- `POST /api/orders/` - Tạo đơn hàng từ danh sách sản phẩm
+- `GET /api/orders/track/:orderNumber` - Tra cứu đơn hàng bằng mã
 - `GET /api/orders` - Lấy danh sách đơn hàng (Admin)
 - `GET /api/orders/:id` - Lấy chi tiết đơn hàng (Admin)
 - `PUT /api/orders/:id/status` - Cập nhật trạng thái đơn hàng (Admin)
+- `DELETE /api/orders/:id` - Xóa đơn hàng (Admin)
 
 ### Blog
 - `GET /api/blogs` - Lấy danh sách blog
@@ -376,15 +335,13 @@ db.contacts.createIndex({ "createdAt": -1 })
 - `PUT /api/admin/change-password` - Đổi mật khẩu
 
 ### Liên hệ
-- `POST /api/contacts` - Gửi tin nhắn liên hệ
-- `GET /api/contacts` - Lấy danh sách tin nhắn (Admin)
-- `POST /api/contacts/:id/reply` - Trả lời tin nhắn (Admin)
+- `POST /api/contacts` - Gửi email liên hệ (không lưu database)
 
 ### Thống kê
-- `GET /api/statistics/dashboard` - Thống kê dashboard (Admin)
+- `GET /api/statistics/dashboard` - Thống kê dashboard tổng quan (Admin)
 - `GET /api/statistics/products` - Thống kê sản phẩm (Admin)
-- `GET /api/statistics/orders` - Thống kê đơn hàng (Admin)
-- `GET /api/statistics/blogs` - Thống kê blog (Admin)
+- `GET /api/statistics/orders` - Thống kê đơn hàng và trạng thái liên hệ (Admin)
+- `GET /api/statistics/contacts` - Thống kê liên hệ theo thời gian (Admin)
 
 ## Cấu trúc dự án
 
@@ -396,23 +353,22 @@ locgiogiasi-be/
 ├── controller/
 │   ├── admin.controller.js
 │   ├── blog.controller.js
-│   ├── cart.controller.js
 │   ├── contact.controller.js
 │   ├── order.controller.js
 │   ├── product.controller.js
 │   └── statistics.controller.js
 ├── middleware/
 │   ├── auth.middleware.js   # Xác thực và phân quyền
-│   ├── cart.middleware.js   # Validation giỏ hàng
 │   ├── error.middleware.js  # Xử lý lỗi
+│   ├── order.middleware.js  # Validation đơn hàng
 │   └── upload.middleware.js # Upload file
 ├── models/
 │   ├── admin.model.js
 │   ├── blog.model.js
-│   ├── cart.model.js
-│   ├── contact.model.js
+│   ├── brand.model.js
 │   ├── order.model.js
-│   └── product.model.js
+│   ├── product.model.js
+│   └── settings.model.js
 ├── routes/
 │   ├── admin.routes.js
 │   ├── blog.routes.js

@@ -13,26 +13,26 @@ const productSchema = new mongoose.Schema({
         unique: true
     },
     brand: {
-        type: String,
-        required: true,
-        trim: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: true
     },
-    carModels: [{
-        type: String,
-        required: true,
-        trim: true
+    compatibleModels: [{
+        carModelId: {
+            type: mongoose.Schema.Types.ObjectId,
+            required: true
+        },
+        carModelName: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        years: [{
+            type: String,
+            required: true
+        }]
     }],
-    year: {
-        type: String,
-        required: true,
-        trim: true
-    },
     price: {
-        type: Number,
-        required: true,
-        min: 0
-    },
-    costPrice: {
         type: Number,
         required: true,
         min: 0
@@ -95,9 +95,9 @@ productSchema.index({ name: 'text', description: 'text', tags: 'text', code: 'te
 productSchema.index({ brand: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ isActive: 1 });
-productSchema.index({ code: 1 });
-productSchema.index({ carModels: 1 });
-productSchema.index({ year: 1 });
+productSchema.index({ 'compatibleModels.carModelName': 1 });
+productSchema.index({ 'compatibleModels.years': 1 });
+productSchema.index({ 'compatibleModels.carModelId': 1 });
 
 // Middleware update updatedAt
 productSchema.pre('save', function(next) {

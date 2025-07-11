@@ -13,21 +13,16 @@ const loginValidation = [
 const createAdminValidation = [
   body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be between 3 and 50 characters'),
   body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('fullName').notEmpty().withMessage('Full name is required'),
-  body('role').isIn(['admin', 'manager', 'editor']).withMessage('Valid role is required')
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ];
 
 const updateAdminValidation = [
   body('username').optional().isLength({ min: 3, max: 50 }).withMessage('Username must be between 3 and 50 characters'),
-  body('email').optional().isEmail().withMessage('Valid email is required'),
-  body('fullName').optional().notEmpty().withMessage('Full name cannot be empty'),
-  body('role').optional().isIn(['admin', 'manager', 'editor']).withMessage('Valid role is required')
+  body('email').optional().isEmail().withMessage('Valid email is required')
 ];
 
 const updateProfileValidation = [
-  body('email').optional().isEmail().withMessage('Valid email is required'),
-  body('fullName').optional().notEmpty().withMessage('Full name cannot be empty')
+  body('email').optional().isEmail().withMessage('Valid email is required')
 ];
 
 const changePasswordValidation = [

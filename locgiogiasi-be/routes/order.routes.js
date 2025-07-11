@@ -2,42 +2,33 @@ const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
 const orderController = require('../controller/order.controller');
-const { authMiddleware, checkPermission } = require('../middleware/auth.middleware');
-const { getOrCreateCart, validateCartItems, validateCustomerInfo } = require('../middleware/cart.middleware');
+const { authMiddleware } = require('../middleware/auth.middleware');
+const { validateCustomerInfo, validateOrderItems } = require('../middleware/order.middleware');
 
-// Validation rules
+// Validation rules for creating order
 const createOrderValidation = [
   body('customer.name').notEmpty().withMessage('Customer name is required'),
   body('customer.email').isEmail().withMessage('Valid email is required'),
   body('customer.phone').notEmpty().withMessage('Phone number is required'),
   body('customer.address').notEmpty().withMessage('Address is required'),
   body('customer.city').notEmpty().withMessage('City is required'),
-  body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
-  body('items.*.product').notEmpty().withMessage('Product ID is required'),
-  body('items.*.quantity').isInt({ min: 1 }).withMessage('Valid quantity is required')
-];
-
-const createOrderFromCartValidation = [
-  body('customer.name').notEmpty().withMessage('Customer name is required'),
-  body('customer.email').isEmail().withMessage('Valid email is required'),
-  body('customer.phone').notEmpty().withMessage('Phone number is required'),
-  body('customer.address').notEmpty().withMessage('Address is required'),
-  body('customer.city').notEmpty().withMessage('City is required')
+  body('items').isArray({ min: 1 }).withMessage('Items array is required with at least one item'),
+  body('items.*.productId').notEmpty().withMessage('Product ID is required for each item'),
+  body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer for each item')
 ];
 
 const updateOrderStatusValidation = [
   body('status').isIn(['pending', 'confirmed', 'processing', 'completed', 'cancelled']).withMessage('Valid status is required')
 ];
 
-// Public routes
-router.post('/', createOrderValidation, validateCartItems, validateCustomerInfo, orderController.createOrder);
-router.post('/from-cart', getOrCreateCart, createOrderFromCartValidation, validateCustomerInfo, orderController.createOrderFromCart);
+// Public routes - create order from product list
+router.post('/', createOrderValidation, validateOrderItems, validateCustomerInfo, orderController.createOrder);
 router.get('/track/:orderNumber', orderController.getOrderByNumber);
 
 // Admin routes
-router.get('/', authMiddleware, checkPermission('orders'), orderController.getOrders);
-router.get('/:id', authMiddleware, checkPermission('orders'), orderController.getOrderById);
-router.put('/:id/status', authMiddleware, checkPermission('orders'), updateOrderStatusValidation, orderController.updateOrderStatus);
-router.delete('/:id', authMiddleware, checkPermission('orders'), orderController.deleteOrder);
+router.get('/', authMiddleware, orderController.getOrders);
+router.get('/:id', authMiddleware, orderController.getOrderById);
+router.put('/:id/status', authMiddleware, updateOrderStatusValidation, orderController.updateOrderStatus);
+router.delete('/:id', authMiddleware, orderController.deleteOrder);
 
 module.exports = router;

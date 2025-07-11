@@ -69,10 +69,6 @@ const getBlogBySlug = async (req, res) => {
       });
     }
 
-    // Increment view count
-    blog.views += 1;
-    await blog.save();
-
     res.json({
       success: true,
       data: blog
@@ -95,7 +91,7 @@ const getFeaturedBlogs = async (req, res) => {
       featured: true,
       status: 'published'
     })
-    .select('title slug excerpt featuredImage author publishDate views')
+    .select('title slug excerpt featuredImage author publishDate')
     .sort({ publishDate: -1 })
     .limit(limit);
 
@@ -198,7 +194,7 @@ const getBlogsAdmin = async (req, res) => {
     }
 
     const blogs = await Blog.find(filter)
-      .select('title slug excerpt author category status publishDate views featured createdAt')
+      .select('title slug excerpt author category status publishDate featured createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

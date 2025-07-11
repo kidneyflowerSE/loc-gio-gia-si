@@ -1,8 +1,68 @@
 const Product = require('../models/product.model');
 const Order = require('../models/order.model');
-const Blog = require('../models/blog.model');
-const Contact = require('../models/contact.model');
 const Admin = require('../models/admin.model');
+
+// Helper function to add totalAmount field to aggregation pipeline
+const addTotalAmountField = () => ({
+  $addFields: {
+    totalAmount: {
+      $sum: {
+        $map: {
+          input: { $ifNull: ['$items', []] },
+          as: 'item',
+          in: { $multiply: [{ $ifNull: ['$$item.price', 0] }, { $ifNull: ['$$item.quantity', 0] }] }
+        }
+      }
+    }
+  }
+});
+
+// Helper function to get date range based on period
+const getDateRange = (period = 'month', count = 12) => {
+  const today = new Date();
+  let startDate;
+  
+  switch (period) {
+    case 'week':
+      startDate = new Date(today.getTime() - (count * 7 * 24 * 60 * 60 * 1000));
+      break;
+    case 'month':
+      startDate = new Date(today.getFullYear(), today.getMonth() - count + 1, 1);
+      break;
+    case 'year':
+      startDate = new Date(today.getFullYear() - count + 1, 0, 1);
+      break;
+    default:
+      startDate = new Date(today.getFullYear(), today.getMonth() - count + 1, 1);
+  }
+  
+  return startDate;
+};
+
+// Helper function to get period grouping for aggregation
+const getPeriodGrouping = (period = 'month') => {
+  switch (period) {
+    case 'week':
+      return {
+        year: { $year: '$orderDate' },
+        week: { $week: '$orderDate' }
+      };
+    case 'month':
+      return {
+        year: { $year: '$orderDate' },
+        month: { $month: '$orderDate' }
+      };
+    case 'year':
+      return {
+        year: { $year: '$orderDate' }
+      };
+    default:
+      return {
+        year: { $year: '$orderDate' },
+        month: { $month: '$orderDate' }
+      };
+  }
+};
 
 // Get dashboard statistics
 const getDashboardStats = async (req, res) => {
@@ -15,13 +75,12 @@ const getDashboardStats = async (req, res) => {
 
     // Get basic counts
     const totalProducts = await Product.countDocuments();
-    const availableProducts = await Product.countDocuments({ status: 'available' });
+    const availableProducts = await Product.countDocuments({ isActive: true });
+    const inactiveProducts = await Product.countDocuments({ isActive: false });
+    
     const totalOrders = await Order.countDocuments();
-    const pendingOrders = await Order.countDocuments({ status: 'pending' });
-    const totalBlogs = await Blog.countDocuments();
-    const publishedBlogs = await Blog.countDocuments({ status: 'published' });
-    const totalContacts = await Contact.countDocuments();
-    const newContacts = await Contact.countDocuments({ status: 'new' });
+    const contactedOrders = await Order.countDocuments({ status: 'contacted' });
+    const notContactedOrders = await Order.countDocuments({ status: 'not contacted' });
 
     // Get monthly statistics
     const ordersThisMonth = await Order.countDocuments({
@@ -30,29 +89,34 @@ const getDashboardStats = async (req, res) => {
     const ordersLastMonth = await Order.countDocuments({
       orderDate: { $gte: startOfLastMonth, $lte: endOfLastMonth }
     });
-
-    const contactsThisMonth = await Contact.countDocuments({
-      createdAt: { $gte: startOfMonth }
+    
+    const contactedOrdersThisMonth = await Order.countDocuments({
+      orderDate: { $gte: startOfMonth },
+      status: 'contacted'
     });
-    const contactsLastMonth = await Contact.countDocuments({
-      createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth }
+    const contactedOrdersLastMonth = await Order.countDocuments({
+      orderDate: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+      status: 'contacted'
     });
 
     // Calculate growth rates
     const orderGrowth = ordersLastMonth > 0 
       ? ((ordersThisMonth - ordersLastMonth) / ordersLastMonth * 100).toFixed(1)
       : 0;
-    const contactGrowth = contactsLastMonth > 0
-      ? ((contactsThisMonth - contactsLastMonth) / contactsLastMonth * 100).toFixed(1)
+      
+    const contactedGrowth = contactedOrdersLastMonth > 0
+      ? ((contactedOrdersThisMonth - contactedOrdersLastMonth) / contactedOrdersLastMonth * 100).toFixed(1)
       : 0;
 
-    // Get revenue statistics (if orders have prices)
+    // Get revenue statistics
     const revenueStats = await Order.aggregate([
+      addTotalAmountField(),
       {
         $group: {
           _id: null,
           totalRevenue: { $sum: '$totalAmount' },
-          averageOrderValue: { $avg: '$totalAmount' }
+          averageOrderValue: { $avg: '$totalAmount' },
+          totalOrders: { $sum: 1 }
         }
       }
     ]);
@@ -60,59 +124,51 @@ const getDashboardStats = async (req, res) => {
     const monthlyRevenue = await Order.aggregate([
       {
         $match: {
-          orderDate: { $gte: startOfMonth },
-          status: { $in: ['confirmed', 'processing', 'completed'] }
+          orderDate: { $gte: startOfMonth }
         }
       },
+      addTotalAmountField(),
       {
         $group: {
           _id: null,
-          revenue: { $sum: '$totalAmount' }
+          revenue: { $sum: '$totalAmount' },
+          orderCount: { $sum: 1 }
         }
       }
     ]);
 
-    // Get most viewed products
-    const topProducts = await Product.find()
-      .sort({ views: -1 })
-      .limit(5)
-      .select('name brand model views price');
-
-    // Get recent activities
-    const recentOrders = await Order.find()
-      .sort({ orderDate: -1 })
-      .limit(5)
-      .select('orderNumber customer.name totalAmount status orderDate');
-
-    const recentContacts = await Contact.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('name email subject status createdAt');
-
-    // Get monthly order chart data
-    const orderChartData = await Order.aggregate([
+    // Get contacted orders revenue
+    const contactedRevenue = await Order.aggregate([
       {
-        $match: {
-          orderDate: { $gte: new Date(today.getFullYear(), today.getMonth() - 11, 1) }
-        }
+        $match: { status: 'contacted' }
       },
+      addTotalAmountField(),
       {
         $group: {
-          _id: {
-            year: { $year: '$orderDate' },
-            month: { $month: '$orderDate' }
-          },
-          count: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' }
+          _id: null,
+          revenue: { $sum: '$totalAmount' },
+          orderCount: { $sum: 1 }
         }
-      },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1 }
       }
     ]);
 
-    // Get order status distribution
-    const orderStatusDistribution = await Order.aggregate([
+    // Get most recent products
+    const topProducts = await Product.find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .populate('brand', 'name')
+      .select('name brand compatibleModels price')
+      .lean();
+
+    // Get recent orders with contact status
+    const recentOrders = await Order.find()
+      .sort({ orderDate: -1 })
+      .limit(10)
+      .select('orderNumber customer status orderDate')
+      .lean();
+
+    // Get order contact status distribution
+    const orderContactStatus = await Order.aggregate([
       {
         $group: {
           _id: '$status',
@@ -121,11 +177,22 @@ const getDashboardStats = async (req, res) => {
       }
     ]);
 
-    // Get product category distribution
+    // Get product brand distribution
     const productBrandDistribution = await Product.aggregate([
       {
+        $lookup: {
+          from: 'brands',
+          localField: 'brand',
+          foreignField: '_id',
+          as: 'brandInfo'
+        }
+      },
+      {
+        $unwind: '$brandInfo'
+      },
+      {
         $group: {
-          _id: '$brand',
+          _id: '$brandInfo.name',
           count: { $sum: 1 }
         }
       },
@@ -141,39 +208,41 @@ const getDashboardStats = async (req, res) => {
       success: true,
       data: {
         overview: {
-          totalProducts,
-          availableProducts,
-          totalOrders,
-          pendingOrders,
-          totalBlogs,
-          publishedBlogs,
-          totalContacts,
-          newContacts
+          products: {
+            total: totalProducts || 0,
+            active: availableProducts || 0,
+            inactive: inactiveProducts || 0
+          },
+          orders: {
+            total: totalOrders || 0,
+            contacted: contactedOrders || 0,
+            notContacted: notContactedOrders || 0,
+            contactRate: totalOrders > 0 ? ((contactedOrders / totalOrders) * 100).toFixed(1) : 0
+          }
         },
         growth: {
-          ordersThisMonth,
-          orderGrowth: parseFloat(orderGrowth),
-          contactsThisMonth,
-          contactGrowth: parseFloat(contactGrowth)
+          ordersThisMonth: ordersThisMonth || 0,
+          orderGrowth: parseFloat(orderGrowth) || 0,
+          contactedOrdersThisMonth: contactedOrdersThisMonth || 0,
+          contactedGrowth: parseFloat(contactedGrowth) || 0
         },
         revenue: {
-          total: revenueStats[0]?.totalRevenue || 0,
-          average: revenueStats[0]?.averageOrderValue || 0,
-          monthly: monthlyRevenue[0]?.revenue || 0
+          total: revenueStats.length > 0 ? revenueStats[0].totalRevenue || 0 : 0,
+          average: revenueStats.length > 0 ? revenueStats[0].averageOrderValue || 0 : 0,
+          monthly: monthlyRevenue.length > 0 ? monthlyRevenue[0].revenue || 0 : 0,
+          contacted: contactedRevenue.length > 0 ? contactedRevenue[0].revenue || 0 : 0,
+          contactedCount: contactedRevenue.length > 0 ? contactedRevenue[0].orderCount || 0 : 0
         },
-        topProducts,
-        recentActivities: {
-          orders: recentOrders,
-          contacts: recentContacts
-        },
+        topProducts: topProducts || [],
+        recentOrders: recentOrders || [],
         charts: {
-          monthlyOrders: orderChartData,
-          orderStatus: orderStatusDistribution,
-          productBrands: productBrandDistribution
+          orderContactStatus: orderContactStatus || [],
+          productBrands: productBrandDistribution || []
         }
       }
     });
   } catch (error) {
+    console.error('Dashboard stats error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching dashboard statistics',
@@ -186,18 +255,26 @@ const getDashboardStats = async (req, res) => {
 const getProductStats = async (req, res) => {
   try {
     const totalProducts = await Product.countDocuments();
-    const availableProducts = await Product.countDocuments({ status: 'available' });
-    const soldProducts = await Product.countDocuments({ status: 'sold' });
-    const reservedProducts = await Product.countDocuments({ status: 'reserved' });
+    const availableProducts = await Product.countDocuments({ isActive: true });
+    const inactiveProducts = await Product.countDocuments({ isActive: false });
 
     // Get brand distribution
     const brandStats = await Product.aggregate([
       {
+        $lookup: {
+          from: 'brands',
+          localField: 'brand',
+          foreignField: '_id',
+          as: 'brandInfo'
+        }
+      },
+      {
+        $unwind: '$brandInfo'
+      },
+      {
         $group: {
-          _id: '$brand',
-          count: { $sum: 1 },
-          avgPrice: { $avg: '$price' },
-          totalViews: { $sum: '$views' }
+          _id: '$brandInfo.name',
+          count: { $sum: 1 }
         }
       },
       {
@@ -205,17 +282,25 @@ const getProductStats = async (req, res) => {
       }
     ]);
 
-    // Get year distribution
-    const yearStats = await Product.aggregate([
+    // Get car model distribution
+    const modelStats = await Product.aggregate([
+      {
+        $unwind: { path: '$compatibleModels', preserveNullAndEmptyArrays: true }
+      },
       {
         $group: {
-          _id: '$year',
-          count: { $sum: 1 },
-          avgPrice: { $avg: '$price' }
+          _id: '$compatibleModels.carModelName',
+          count: { $sum: 1 }
         }
       },
       {
-        $sort: { _id: -1 }
+        $match: { _id: { $ne: null } }
+      },
+      {
+        $sort: { count: -1 }
+      },
+      {
+        $limit: 10
       }
     ]);
 
@@ -224,11 +309,10 @@ const getProductStats = async (req, res) => {
       {
         $bucket: {
           groupBy: '$price',
-          boundaries: [0, 500000000, 1000000000, 1500000000, 2000000000, 999999999999],
+          boundaries: [0, 200000, 500000, 1000000, 2000000, 999999999999],
           default: 'Other',
           output: {
-            count: { $sum: 1 },
-            avgPrice: { $avg: '$price' }
+            count: { $sum: 1 }
           }
         }
       }
@@ -240,15 +324,15 @@ const getProductStats = async (req, res) => {
         overview: {
           totalProducts,
           availableProducts,
-          soldProducts,
-          reservedProducts
+          inactiveProducts
         },
         brandStats,
-        yearStats,
+        modelStats,
         priceRangeStats
       }
     });
   } catch (error) {
+    console.error('Product stats error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching product statistics',
@@ -260,42 +344,92 @@ const getProductStats = async (req, res) => {
 // Get order statistics
 const getOrderStats = async (req, res) => {
   try {
+    // Get query parameters
+    const { period = 'month', count = 12 } = req.query;
+    
+    // Basic order counts by contact status
     const totalOrders = await Order.countDocuments();
-    const pendingOrders = await Order.countDocuments({ status: 'pending' });
-    const confirmedOrders = await Order.countDocuments({ status: 'confirmed' });
-    const completedOrders = await Order.countDocuments({ status: 'completed' });
-    const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
+    const contactedOrders = await Order.countDocuments({ status: 'contacted' });
+    const notContactedOrders = await Order.countDocuments({ status: 'not contacted' });
 
-    // Get monthly order trends
-    const monthlyTrends = await Order.aggregate([
-      {
-        $match: {
-          orderDate: { $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1) }
-        }
-      },
+    // Get contact status distribution
+    const contactStatusDistribution = await Order.aggregate([
       {
         $group: {
-          _id: {
-            year: { $year: '$orderDate' },
-            month: { $month: '$orderDate' }
-          },
-          count: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' }
+          _id: '$status',
+          count: { $sum: 1 }
         }
-      },
-      {
-        $sort: { '_id.year': 1, '_id.month': 1 }
       }
     ]);
 
-    // Get top customers
+    // Get time-based trends based on period
+    const startDate = getDateRange(period, parseInt(count));
+    const periodGrouping = getPeriodGrouping(period);
+    
+    const timeTrends = await Order.aggregate([
+      {
+        $match: {
+          orderDate: { $gte: startDate }
+        }
+      },
+      addTotalAmountField(),
+      {
+        $group: {
+          _id: periodGrouping,
+          totalOrders: { $sum: 1 },
+          contactedOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'contacted'] }, 1, 0] }
+          },
+          notContactedOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'not contacted'] }, 1, 0] }
+          },
+          totalRevenue: { $sum: '$totalAmount' },
+          contactedRevenue: {
+            $sum: { $cond: [{ $eq: ['$status', 'contacted'] }, '$totalAmount', 0] }
+          }
+        }
+      },
+      {
+        $addFields: {
+          contactRate: {
+            $cond: [
+              { $gt: ['$totalOrders', 0] },
+              { $multiply: [{ $divide: ['$contactedOrders', '$totalOrders'] }, 100] },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1 }
+      }
+    ]);
+
+    // Get top customers by order value
     const topCustomers = await Order.aggregate([
+      addTotalAmountField(),
       {
         $group: {
           _id: '$customer.email',
           customerName: { $first: '$customer.name' },
+          customerPhone: { $first: '$customer.phone' },
           totalOrders: { $sum: 1 },
-          totalAmount: { $sum: '$totalAmount' }
+          contactedOrders: {
+            $sum: { $cond: [{ $eq: ['$status', 'contacted'] }, 1, 0] }
+          },
+          totalAmount: { $sum: '$totalAmount' },
+          lastOrderDate: { $max: '$orderDate' }
+        }
+      },
+      {
+        $addFields: {
+          contactRate: {
+            $cond: [
+              { $gt: ['$totalOrders', 0] },
+              { $multiply: [{ $divide: ['$contactedOrders', '$totalOrders'] }, 100] },
+              0
+            ]
+          }
         }
       },
       {
@@ -306,33 +440,50 @@ const getOrderStats = async (req, res) => {
       }
     ]);
 
-    // Get revenue by payment method
-    const paymentMethodStats = await Order.aggregate([
-      {
-        $group: {
-          _id: '$paymentMethod',
-          count: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' }
-        }
-      }
-    ]);
+    // Get recent orders with contact details
+    const recentOrders = await Order.find()
+      .sort({ orderDate: -1 })
+      .limit(20)
+      .select('orderNumber customer status orderDate updatedAt')
+      .lean();
+
+    // Get orders needing contact (not contacted for more than 24 hours)
+    const needContactDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const ordersNeedingContact = await Order.find({
+      status: 'not contacted',
+      orderDate: { $lte: needContactDate }
+    })
+    .sort({ orderDate: 1 })
+    .limit(10)
+    .select('orderNumber customer orderDate')
+    .lean();
+
+    // Calculate conversion metrics
+    const conversionMetrics = {
+      totalOrders,
+      contactedOrders,
+      notContactedOrders,
+      contactRate: totalOrders > 0 ? ((contactedOrders / totalOrders) * 100).toFixed(1) : 0,
+      ordersNeedingContact: ordersNeedingContact.length
+    };
 
     res.json({
       success: true,
       data: {
-        overview: {
-          totalOrders,
-          pendingOrders,
-          confirmedOrders,
-          completedOrders,
-          cancelledOrders
+        overview: conversionMetrics,
+        contactStatusDistribution,
+        timeTrends: {
+          period,
+          count: parseInt(count),
+          data: timeTrends
         },
-        monthlyTrends,
         topCustomers,
-        paymentMethodStats
+        recentOrders,
+        ordersNeedingContact
       }
     });
   } catch (error) {
+    console.error('Order stats error:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching order statistics',
@@ -342,73 +493,137 @@ const getOrderStats = async (req, res) => {
 };
 
 // Get blog statistics
-const getBlogStats = async (req, res) => {
+// Get contact statistics by time period
+const getContactStats = async (req, res) => {
   try {
-    const totalBlogs = await Blog.countDocuments();
-    const publishedBlogs = await Blog.countDocuments({ status: 'published' });
-    const draftBlogs = await Blog.countDocuments({ status: 'draft' });
-    const archivedBlogs = await Blog.countDocuments({ status: 'archived' });
+    // Get query parameters
+    const { period = 'month', count = 12, status } = req.query;
+    
+    // Build match filter
+    const matchFilter = {};
+    if (status && ['contacted', 'not contacted'].includes(status)) {
+      matchFilter.status = status;
+    }
 
-    // Get category distribution
-    const categoryStats = await Blog.aggregate([
+    // Get date range
+    const startDate = getDateRange(period, parseInt(count));
+    matchFilter.orderDate = { $gte: startDate };
+
+    // Get period grouping
+    const periodGrouping = getPeriodGrouping(period);
+
+    // Get contact statistics over time
+    const contactTrends = await Order.aggregate([
+      { $match: matchFilter },
+      addTotalAmountField(),
       {
         $group: {
-          _id: '$category',
+          _id: {
+            ...periodGrouping,
+            status: '$status'
+          },
           count: { $sum: 1 },
-          totalViews: { $sum: '$views' }
-        }
-      },
-      {
-        $sort: { count: -1 }
-      }
-    ]);
-
-    // Get most viewed blogs
-    const topBlogs = await Blog.find({ status: 'published' })
-      .sort({ views: -1 })
-      .limit(10)
-      .select('title author views publishDate');
-
-    // Get monthly publication trends
-    const monthlyPublications = await Blog.aggregate([
-      {
-        $match: {
-          status: 'published',
-          publishDate: { $gte: new Date(new Date().getFullYear(), new Date().getMonth() - 11, 1) }
+          revenue: { $sum: '$totalAmount' }
         }
       },
       {
         $group: {
           _id: {
-            year: { $year: '$publishDate' },
-            month: { $month: '$publishDate' }
+            year: '$_id.year',
+            month: '$_id.month',
+            week: '$_id.week'
           },
-          count: { $sum: 1 }
+          contacted: {
+            $sum: { $cond: [{ $eq: ['$_id.status', 'contacted'] }, '$count', 0] }
+          },
+          notContacted: {
+            $sum: { $cond: [{ $eq: ['$_id.status', 'not contacted'] }, '$count', 0] }
+          },
+          contactedRevenue: {
+            $sum: { $cond: [{ $eq: ['$_id.status', 'contacted'] }, '$revenue', 0] }
+          },
+          totalRevenue: { $sum: '$revenue' },
+          totalOrders: { $sum: '$count' }
         }
       },
       {
-        $sort: { '_id.year': 1, '_id.month': 1 }
+        $addFields: {
+          contactRate: {
+            $cond: [
+              { $gt: ['$totalOrders', 0] },
+              { $multiply: [{ $divide: ['$contacted', '$totalOrders'] }, 100] },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $sort: { '_id.year': 1, '_id.month': 1, '_id.week': 1 }
       }
     ]);
+
+    // Get overall summary
+    const overallStats = await Order.aggregate([
+      { $match: matchFilter },
+      addTotalAmountField(),
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          revenue: { $sum: '$totalAmount' },
+          avgOrderValue: { $avg: '$totalAmount' }
+        }
+      }
+    ]);
+
+    // Calculate totals
+    const totalStats = overallStats.reduce((acc, stat) => {
+      acc.totalOrders += stat.count;
+      acc.totalRevenue += stat.revenue;
+      
+      if (stat._id === 'contacted') {
+        acc.contactedOrders = stat.count;
+        acc.contactedRevenue = stat.revenue;
+        acc.avgContactedOrderValue = stat.avgOrderValue;
+      } else {
+        acc.notContactedOrders = stat.count;
+        acc.notContactedRevenue = stat.revenue;
+        acc.avgNotContactedOrderValue = stat.avgOrderValue;
+      }
+      
+      return acc;
+    }, {
+      totalOrders: 0,
+      totalRevenue: 0,
+      contactedOrders: 0,
+      contactedRevenue: 0,
+      notContactedOrders: 0,
+      notContactedRevenue: 0,
+      avgContactedOrderValue: 0,
+      avgNotContactedOrderValue: 0
+    });
+
+    // Calculate contact rate
+    totalStats.contactRate = totalStats.totalOrders > 0 
+      ? ((totalStats.contactedOrders / totalStats.totalOrders) * 100).toFixed(1)
+      : 0;
 
     res.json({
       success: true,
       data: {
-        overview: {
-          totalBlogs,
-          publishedBlogs,
-          draftBlogs,
-          archivedBlogs
-        },
-        categoryStats,
-        topBlogs,
-        monthlyPublications
+        period,
+        count: parseInt(count),
+        status: status || 'all',
+        summary: totalStats,
+        trends: contactTrends,
+        breakdown: overallStats
       }
     });
   } catch (error) {
+    console.error('Contact stats error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error fetching blog statistics',
+      message: 'Error fetching contact statistics',
       error: error.message
     });
   }
@@ -418,5 +633,5 @@ module.exports = {
   getDashboardStats,
   getProductStats,
   getOrderStats,
-  getBlogStats
+  getContactStats
 };
