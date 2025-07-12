@@ -42,10 +42,19 @@ adminSchema.pre('save', async function(next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    this.updatedAt = new Date();
     next();
   } catch (error) {
     next(error);
   }
+});
+
+// Update updatedAt before saving
+adminSchema.pre('save', function(next) {
+  if (!this.isModified('password')) {
+    this.updatedAt = new Date();
+  }
+  next();
 });
 
 // Compare password method

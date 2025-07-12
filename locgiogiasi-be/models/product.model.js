@@ -69,13 +69,26 @@ const productSchema = new mongoose.Schema({
         min: 0,
         default: 0
     },
-    specifications: {
-        type: Map,
-        of: String
+    origin: {
+        type: String,
+        trim: true,
+        default: ''
     },
-    tags: [{
-        type: String
-    }],
+    material: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    dimensions: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    warranty: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     isActive: {
         type: Boolean,
         default: true
@@ -91,7 +104,7 @@ const productSchema = new mongoose.Schema({
 });
 
 // Index cho tìm kiếm
-productSchema.index({ name: 'text', description: 'text', tags: 'text', code: 'text' });
+productSchema.index({ name: 'text', description: 'text', code: 'text' });
 productSchema.index({ brand: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ isActive: 1 });

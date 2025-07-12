@@ -57,7 +57,7 @@ const blogSchema = new mongoose.Schema({
   }
 });
 
-// Generate slug from title
+// Generate slug from title and update timestamps
 blogSchema.pre('save', function(next) {
   if (this.isModified('title')) {
     this.slug = this.title
@@ -67,6 +67,7 @@ blogSchema.pre('save', function(next) {
       .replace(/-+/g, '-')
       .trim('-');
   }
+  this.updatedAt = new Date();
   next();
 });
 
