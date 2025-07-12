@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BarChart2, ShoppingBag, Package, Book, LogOut, Settings, User, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { BarChart2, ShoppingBag, Package, Book, LogOut, ChevronDown } from "lucide-react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import api from "@/utils/api";
+import ReactDOM from 'react-dom';
 
 interface NavItem {
   href: string;
@@ -29,6 +31,31 @@ const navItems: NavItem[] = [
 export default function Sidebar() {
   const router = useRouter();
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState<string>(()=>{
+    if(typeof window!== 'undefined'){
+      return localStorage.getItem('admin_name') || 'Admin';
+    }
+    return 'Admin';
+  });
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+
+  // Fetch admin profile once
+  useEffect(() => {
+    if(adminName!== 'Admin') return; // already cached
+    const fetchProfile = async () => {
+      try {
+        const res = await api.get('/admin/profile');
+        if (res.data.success) {
+          const name = res.data.data.username || res.data.data.email || 'Admin';
+          setAdminName(name);
+          localStorage.setItem('admin_name', name);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchProfile();
+  }, []);
   
   // Check if the current route matches a nav item
   const isActive = (href: string) => {
@@ -50,8 +77,8 @@ export default function Sidebar() {
             <Image src="/logo.png" width={30} height={30} alt="Logo" className="w-6 h-6" />
           </div>
           <div>
-            <p className="font-bold text-lg text-gray-800">Admin Panel</p>
-            <p className="text-xs text-gray-500">Lọc Gió Giá Sỉ</p>
+            <p className="font-bold text-lg text-gray-800">{adminName}</p>
+            <p className="text-xs text-gray-500">Quản trị viên</p>
           </div>
         </Link>
       </div>
@@ -134,12 +161,7 @@ export default function Sidebar() {
           <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">WEBSITE</span>
         </Link>
         <button
-          onClick={() => {
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('admin_token');
-            }
-            router.push('/admin/login');
-          }}
+          onClick={() => setShowLogoutModal(true)}
           className="w-full mt-2 flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -148,6 +170,32 @@ export default function Sidebar() {
           </div>
         </button>
       </div>
+      {showLogoutModal && typeof window !== 'undefined' && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-lg w-80 p-6 animate-fade-in">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Xác nhận đăng xuất</h3>
+            <p className="text-sm text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 rounded-md text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none"
+              >
+                Huỷ
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('admin_token');
+                  router.push('/admin/login');
+                }}
+                className="px-4 py-2 rounded-md text-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none"
+              >
+                Đăng xuất
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </aside>
   );
 } 

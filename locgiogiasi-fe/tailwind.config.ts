@@ -60,6 +60,10 @@ const config: Config = {
           },
         },
       },
+      zIndex: {
+        '60': '60',
+        '70': '70',
+      },
     },
   },
   plugins: [],
