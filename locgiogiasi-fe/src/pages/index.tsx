@@ -1,115 +1,256 @@
+import { useState } from "react";
 import Image from "next/image";
-import localFont from "next/font/local";
+import Link from "next/link";
+import ProductCard, { Product } from "@/components/ProductCard";
+import ProductSection from "@/components/ProductSection";
+import Hero from "@/components/Hero";
+import SearchBar from "@/components/SearchBar";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+// Dummy products (will be replaced with real data later)
+const products: Product[] = [
+  {
+    id: "1",
+    name: "Lọc Gió Động Cơ Toyota Camry Vios 2019",
+    slug: "loc-gio-dong-co-toyota-vios-2019",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 450000,
+    brand: "Toyota",
+    vehicle_type: "Sedan",
+    year: 2019,
+    product_code: "PRD001",
+  },
+  {
+    id: "2",
+    name: "Lọc Gió Động Cơ Honda City 2020",
+    slug: "loc-gio-dong-co-honda-city-2020",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 480000,
+    brand: "Honda",
+    vehicle_type: "Sedan",
+    year: 2020,
+    product_code: "PRD002",
+  },
+  {
+    id: "3",
+    name: "Lọc Gió Điều Hòa Ford Ranger 2021",
+    slug: "loc-gio-dieu-hoa-ford-ranger-2021",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 320000,
+    brand: "Ford",
+    vehicle_type: "Pickup",
+    year: 2021,
+    product_code: "PRD003",
+  },
+  {
+    id: "4",
+    name: "Lọc Gió Động Cơ Mazda 3 2022",
+    slug: "loc-gio-dong-co-mazda-3-2022",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 550000,
+    brand: "Mazda",
+    vehicle_type: "Sedan",
+    year: 2022,
+    product_code: "PRD004",
+  },
+  {
+    id: "5",
+    name: "Lọc Gió Điều Hòa Hyundai Accent 2018",
+    slug: "loc-gio-dieu-hoa-hyundai-accent-2018",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 300000,
+    brand: "Hyundai",
+    vehicle_type: "Sedan",
+    year: 2018,
+    product_code: "PRD005",
+  },
+  {
+    id: "6",
+    name: "Lọc Gió Động Cơ Mitsubishi Xpander 2021",
+    slug: "loc-gio-dong-co-mitsubishi-xpander-2021",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 520000,
+    brand: "Mitsubishi",
+    vehicle_type: "MPV",
+    year: 2021,
+    product_code: "PRD006",
+  },
+  {
+    id: "7",
+    name: "Lọc Gió Điều Hòa Kia Morning 2019",
+    slug: "loc-gio-dieu-hoa-kia-morning-2019",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 290000,
+    brand: "Kia",
+    vehicle_type: "Hatchback",
+    year: 2019,
+    product_code: "PRD007",
+  },
+  {
+    id: "8",
+    name: "Lọc Gió Động Cơ Ford Everest 2020",
+    slug: "loc-gio-dong-co-ford-everest-2020",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 600000,
+    brand: "Ford",
+    vehicle_type: "SUV",
+    year: 2020,
+    product_code: "PRD008",
+  },
+  {
+    id: "9",
+    name: "Lọc Gió Điều Hòa Toyota Fortuner 2021",
+    slug: "loc-gio-dieu-hoa-toyota-fortuner-2021",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 350000,
+    brand: "Toyota",
+    vehicle_type: "SUV",
+    year: 2021,
+    product_code: "PRD009",
+  },
+  {
+    id: "10",
+    name: "Lọc Gió Động Cơ Nissan Navara 2017",
+    slug: "loc-gio-dong-co-nissan-navara-2017",
+    image: "/loc-gio-dieu-hoa.jpg",
+    price: 510000,
+    brand: "Nissan",
+    vehicle_type: "Pickup",
+    year: 2017,
+    product_code: "PRD010",
+  },
+];
 
-export default function Home() {
+// Blog posts data
+const blogPosts = [
+  {
+    id: 1,
+    title: "Tầm quan trọng của việc thay lọc gió định kỳ",
+    slug: "tam-quan-trong-cua-viec-thay-loc-gio-dinh-ky",
+    excerpt: "Lọc gió là một phần quan trọng trong hệ thống động cơ ô tô. Việc thay thế định kỳ giúp động cơ hoạt động hiệu quả và kéo dài tuổi thọ xe.",
+    image: "/loc-gio-dieu-hoa.jpg",
+    date: "15/06/2023",
+    category: "Bảo dưỡng",
+    author: "Kỹ thuật viên Minh"
+  },
+  {
+    id: 2,
+    title: "Cách phân biệt lọc gió chính hãng và hàng giả",
+    slug: "cach-phan-biet-loc-gio-chinh-hang-va-hang-gia",
+    excerpt: "Thị trường phụ tùng ô tô có nhiều sản phẩm kém chất lượng. Bài viết này giúp bạn nhận biết lọc gió chính hãng để tránh mua phải hàng giả.",
+    image: "/loc-gio-dieu-hoa.jpg",
+    date: "22/07/2023",
+    category: "Kiến thức",
+    author: "Chuyên gia Hùng"
+  },
+  {
+    id: 3,
+    title: "5 dấu hiệu cho thấy lọc gió ô tô cần được thay thế",
+    slug: "5-dau-hieu-cho-thay-loc-gio-o-to-can-duoc-thay-the",
+    excerpt: "Lọc gió bẩn có thể gây ra nhiều vấn đề cho xe. Hãy tìm hiểu những dấu hiệu để biết khi nào cần thay lọc gió mới cho xe của bạn.",
+    image: "/loc-gio-dieu-hoa.jpg",
+    date: "05/08/2023",
+    category: "Bảo dưỡng",
+    author: "Kỹ sư Thành"
+  },
+];
+
+const brands = ["Toyota", "Honda", "Ford", "Mazda", "Hyundai", "Kia"];
+
+export default function HomePage() {
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      <div className="space-y-12">
+      {/* Hero Section */}
+      <section className="relative -mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
+       <Hero />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        {/* Car Finder Form */}
+        <SearchBar />
+      </section>
+
+      {/* Products by Category */}
+      <ProductSection 
+        title="Lọc gió Toyota" 
+        products={products} 
+        viewMoreLink="/products?brand=toyota"
+        viewMoreText="Xem thêm"
+      />
+      {/* <ProductSection 
+        title="Lọc gió Honda" 
+        products={products} 
+        viewMoreLink="/products?brand=honda"
+        viewMoreText="Xem thêm"
+      />
+      <ProductSection 
+        title="Lọc gió Ford" 
+        products={products} 
+        viewMoreLink="/products?brand=ford"
+        viewMoreText="Xem thêm"
+      />
+      <ProductSection
+        title="Lọc gió Mazda" 
+        products={products} 
+        viewMoreLink="/products?brand=mazda"
+        viewMoreText="Xem thêm"
+      /> */}
+
+      {/* Blog Posts */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <div className="bg-primary-600 w-1 h-6 mr-3"></div>
+            <h2 className="text-2xl font-bold text-secondary-900">Bài viết mới nhất</h2>
+          </div>
+          <Link href="/blog" className="text-primary-600 hover:text-primary-700 font-medium">
+            Xem tất cả
+          </Link>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        
+        <div className="grid gap-8 md:grid-cols-3 my-8">
+          {blogPosts.map((post) => (
+            <div key={post.id} className="bg-white rounded-lg overflow-hidden shadow-card hover:shadow-lg transition-all">
+              <Link href={`/blog/${post.slug}`} className="block relative aspect-[16/9] bg-secondary-100">
           <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+                  src={post.image}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                />
+              </Link>
+              <div className="p-6">
+                <div className="flex items-center text-xs text-secondary-500 mb-2">
+                  <span className="bg-secondary-100 text-secondary-700 px-2 py-1 rounded mr-2">
+                    {post.category}
+                  </span>
+                  <span>{post.date}</span>
+                </div>
+                <Link href={`/blog/${post.slug}`}>
+                  <h3 className="font-bold text-lg text-secondary-900 mb-2 hover:text-primary-600 transition-colors">
+                    {post.title}
+                  </h3>
+                </Link>
+                <p className="text-secondary-600 text-sm mb-4 line-clamp-2">
+                  {post.excerpt}
+                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 rounded-full bg-secondary-200 flex items-center justify-center text-secondary-700 font-medium mr-2">
+                      {post.author.charAt(0)}
+                    </div>
+                    <span className="text-xs text-secondary-700">{post.author}</span>
+                  </div>
+                  <Link href={`/blog/${post.slug}`} className="text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center">
+                    Đọc tiếp
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 ml-1">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      
     </div>
   );
 }
