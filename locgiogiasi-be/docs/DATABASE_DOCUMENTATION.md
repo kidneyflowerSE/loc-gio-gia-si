@@ -1,82 +1,67 @@
-# Tài liệu Database - Hệ thống LocGioGiaSi
+# Tài liệu Database - LocGioGiaSi Backend
 
 ## Tổng quan
-Hệ thống sử dụng MongoDB với Mongoose ODM để quản lý cơ sở dữ liệu. Database bao gồm 6 collections chính để quản lý một cửa hàng bán phụ tùng ô tô trực tuyến.
 
-## Kiến trúc Database
+Hệ thống sử dụng **MongoDB** làm cơ sở dữ liệu với **Mongoose** làm ODM (Object Document Mapper). Database được thiết kế để quản lý một cửa hàng bán lọc gió ô tô với các tính năng quản lý sản phẩm, đơn hàng, blog, và quản trị.
 
-### 1. Collection: `admins`
-**Mô tả**: Quản lý tài khoản quản trị viên hệ thống
+## Kết nối Database
 
-**Schema**:
+**File:** `config/database.js`
+
+```javascript
+const connectDatabase = async () => {
+  const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/locgiogiasi', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+  console.log(`MongoDB Connected: ${conn.connection.host}`);
+};
+```
+
+**Cấu hình:**
+- **Database Name:** `locgiogiasi`
+- **Default URI:** `mongodb://localhost:27017/locgiogiasi`
+- **Production URI:** Từ biến môi trường `MONGODB_URI`
+
+## Các Collection (Models)
+
+### 1. Admin Model (`models/admin.model.js`)
+
+**Mục đích:** Quản lý tài khoản quản trị viên
+
+**Schema:**
 ```javascript
 {
-  _id: ObjectId,
   username: String (required, unique, 3-50 chars),
   email: String (required, unique, lowercase),
-  password: String (required, hashed, min 6 chars),
+  password: String (required, min 6 chars, hashed),
   lastLogin: Date,
   createdAt: Date (default: now),
   updatedAt: Date (default: now)
 }
 ```
 
-**Đặc điểm**:
-- Mật khẩu được hash bằng bcryptjs với salt 10
-- Email được chuyển về lowercase tự động
-- Password được ẩn khi trả về JSON
-- Có method `comparePassword()` để xác thực
+**Tính năng:**
+- Mã hóa mật khẩu tự động với bcrypt (salt: 10)
+- Ẩn password khi chuyển đổi sang JSON
+- Method `comparePassword()` để xác thực
+- Tự động cập nhật `updatedAt` khi save
 
----
+**Index:** Tự động tạo unique index cho `username` và `email`
 
-### 2. Collection: `brands`
-**Mô tả**: Quản lý thông tin hãng xe và các dòng xe tương ứng
+### 2. Product Model (`models/product.model.js`)
 
-**Schema**:
+**Mục đích:** Quản lý sản phẩm lọc gió ô tô
+
+**Schema:**
 ```javascript
 {
-  _id: ObjectId,
-  name: String (required, unique, trim),
-  carModels: [{
-    _id: ObjectId (auto-generated),
-    name: String (required, trim),
-    years: [String] (required),
-    isActive: Boolean (default: true),
-    createdAt: Date (default: now)
-  }],
-  isActive: Boolean (default: true),
-  createdAt: Date (default: now),
-  updatedAt: Date (default: now)
-}
-```
-
-**Index**:
-- `name`: text search
-- `isActive`: 1
-- `carModels.name`: 1
-- `carModels.isActive`: 1
-
-**Đặc điểm**:
-- Mỗi brand có thể chứa nhiều car models
-- Car models được lưu dưới dạng embedded documents
-- Hỗ trợ text search trên tên hãng
-- Có thể kích hoạt/vô hiệu hóa từng hãng và dòng xe
-
----
-
-### 3. Collection: `products`
-**Mô tả**: Quản lý thông tin sản phẩm (locgiogiasi ô tô)
-
-**Schema**:
-```javascript
-{
-  _id: ObjectId,
-  name: String (required, trim),
-  code: String (required, unique, trim),
+  name: String (required),
+  code: String (required, unique),
   brand: ObjectId (ref: 'Brand', required),
   compatibleModels: [{
     carModelId: ObjectId (required),
-    carModelName: String (required, trim),
+    carModelName: String (required),
     years: [String] (required)
   }],
   price: Number (required, min: 0),
@@ -89,49 +74,73 @@ Hệ thống sử dụng MongoDB với Mongoose ODM để quản lý cơ sở d�
     alt: String (default: '')
   }],
   stock: Number (required, min: 0, default: 0),
-  specifications: Map of String,
-  tags: [String],
+  origin: String (default: ''),
+  material: String (default: ''),
+  dimensions: String (default: ''),
+  warranty: String (default: ''),
   isActive: Boolean (default: true),
   createdAt: Date (default: now),
   updatedAt: Date (default: now)
 }
 ```
 
-**Index**:
-- Text search: `name`, `description`, `tags`, `code`
-- `brand`: 1
-- `price`: 1
-- `isActive`: 1
-- `compatibleModels.carModelName`: 1
-- `compatibleModels.years`: 1
-- `compatibleModels.carModelId`: 1
+**Index:**
+- Text search: `name`, `description`, `code`
+- Single field: `brand`, `price`, `isActive`
+- Nested field: `compatibleModels.carModelName`, `compatibleModels.years`, `compatibleModels.carModelId`
 
-**Đặc điểm**:
-- Mỗi sản phẩm có mã code duy nhất
-- Liên kết với brand qua ObjectId reference
-- Hỗ trợ nhiều ảnh với thông tin chi tiết
-- Lưu trữ thông số kỹ thuật dưới dạng Map
-- Quản lý tồn kho
+**Tính năng:**
+- Tự động cập nhật `updatedAt`
 - Hỗ trợ tìm kiếm full-text
+- Quản lý hình ảnh với Cloudinary
 
----
+### 3. Brand Model (`models/brand.model.js`)
 
-### 4. Collection: `orders`
-**Mô tả**: Quản lý đơn hàng từ khách hàng
+**Mục đích:** Quản lý hãng xe và dòng xe
 
-**Schema**:
+**Schema:**
 ```javascript
 {
-  _id: ObjectId,
-  orderNumber: String (required, unique, auto-generated),
+  name: String (required, unique),
+  carModels: [{
+    _id: ObjectId (auto-generated),
+    name: String (required),
+    years: [String] (required),
+    isActive: Boolean (default: true),
+    createdAt: Date (default: now)
+  }],
+  isActive: Boolean (default: true),
+  createdAt: Date (default: now),
+  updatedAt: Date (default: now)
+}
+```
+
+**Index:**
+- Text search: `name`
+- Single field: `isActive`
+- Nested field: `carModels.name`, `carModels.isActive`
+
+**Tính năng:**
+- Nested schema cho car models
+- Tự động tạo ObjectId cho car models
+- Hỗ trợ quản lý trạng thái active/inactive
+
+### 4. Order Model (`models/order.model.js`)
+
+**Mục đích:** Quản lý đơn hàng từ khách hàng
+
+**Schema:**
+```javascript
+{
+  orderNumber: String (required, unique),
   customer: {
-    name: String (required, trim),
-    email: String (required, trim, lowercase),
-    phone: String (required, trim),
-    address: String (required, trim),
-    city: String (required, trim),
-    district: String (trim),
-    ward: String (trim)
+    name: String (required),
+    email: String (required, lowercase),
+    phone: String (required),
+    address: String (required),
+    city: String (required),
+    district: String,
+    ward: String
   },
   items: [{
     product: ObjectId (ref: 'Product', required),
@@ -139,38 +148,35 @@ Hệ thống sử dụng MongoDB với Mongoose ODM để quản lý cơ sở d�
     price: Number (required, min: 0)
   }],
   status: String (enum: ['contacted', 'not contacted'], default: 'not contacted'),
-  notes: String (trim),
+  notes: String,
   orderDate: Date (default: now),
   updatedAt: Date (default: now)
 }
 ```
 
-**Virtual Fields**:
+**Virtual Fields:**
 - `totalAmount`: Tổng giá trị đơn hàng
 - `totalItems`: Tổng số lượng sản phẩm
 
-**Đặc điểm**:
-- Mã đơn hàng tự động sinh theo format: `ORD-YYYYMMDD-XXXX`
-- Thông tin khách hàng được lưu trực tiếp trong đơn hàng
-- Mỗi item lưu giá tại thời điểm đặt hàng
-- Có virtual fields để tính toán tổng tiền
+**Tính năng:**
+- Tự động tạo mã đơn hàng unique (format: `ORD-YYYYMMDD-XXXX`)
+- Virtual fields được serialize trong JSON
+- Tự động cập nhật `updatedAt`
 
----
+### 5. Blog Model (`models/blog.model.js`)
 
-### 5. Collection: `blogs`
-**Mô tả**: Quản lý bài viết blog/tin tức
+**Mục đích:** Quản lý bài viết blog
 
-**Schema**:
+**Schema:**
 ```javascript
 {
-  _id: ObjectId,
-  title: String (required, trim),
-  slug: String (required, unique, lowercase, auto-generated),
+  title: String (required),
+  slug: String (required, unique, lowercase),
   content: String (required),
   featuredImage: String (required),
-  author: String (required, trim),
-  category: String (required, trim),
-  tags: [String] (trim),
+  author: String (required),
+  category: String (required),
+  tags: [String],
   status: String (enum: ['hidden', 'published'], default: 'hidden'),
   featured: Boolean (default: false),
   publishDate: Date (default: now),
@@ -179,113 +185,174 @@ Hệ thống sử dụng MongoDB với Mongoose ODM để quản lý cơ sở d�
 }
 ```
 
-**Index**:
+**Index:**
 - Text search: `title`, `content`
-- `category`, `status`: compound index
+- Compound: `category + status`
 
-**Đặc điểm**:
-- Slug tự động sinh từ title
-- Có thể đánh dấu bài viết nổi bật
-- Phân loại theo category và tags
-- Quản lý trạng thái xuất bản
+**Tính năng:**
+- Tự động tạo slug từ title
+- Hỗ trợ tìm kiếm full-text
+- Quản lý trạng thái publish/hidden
 
----
+### 6. Contact Model (`models/contact.model.js`)
 
-### 6. Collection: `settings`
-**Mô tả**: Cài đặt chung của hệ thống
+**Mục đích:** Lưu trữ thông tin liên hệ (hiện tại chỉ gửi email)
 
-**Schema**:
+**Schema:**
 ```javascript
 {
-  _id: ObjectId,
-  storeName: String (required, trim),
-  address: String (required, trim),
-  phone: String (required, trim),
-  email: String (required, trim, lowercase),
-  logo: String (trim),
+  name: String (required),
+  email: String (required, lowercase),
+  phone: String,
+  subject: String (required),
+  message: String (required),
+  createdAt: Date (default: now)
+}
+```
+
+**Lưu ý:** Model này được định nghĩa nhưng hiện tại hệ thống chỉ gửi email mà không lưu vào database.
+
+### 7. Settings Model (`models/settings.model.js`)
+
+**Mục đích:** Cài đặt thông tin cửa hàng
+
+**Schema:**
+```javascript
+{
+  storeName: String (required),
+  address: String (required),
+  phone: String (required),
+  email: String (required, lowercase),
+  logo: String,
   createdAt: Date (default: now),
   updatedAt: Date (default: now)
 }
 ```
 
-**Đặc điểm**:
-- Lưu trữ thông tin cơ bản của cửa hàng
-- Chỉ có một document duy nhất trong collection
+**Tính năng:**
+- Singleton pattern (chỉ có 1 document)
+- Tự động tạo cài đặt mặc định nếu chưa có
+- Tự động cập nhật `updatedAt`
 
----
+## Mối quan hệ giữa các Collection
 
-## Mối quan hệ giữa các Collections
+### Quan hệ chính:
 
-### 1. Brand → Product (One-to-Many)
-- Mỗi product thuộc về một brand
-- Reference: `products.brand → brands._id`
+1. **Product → Brand** (Many-to-One)
+   - `Product.brand` references `Brand._id`
 
-### 2. Product → Order Items (One-to-Many)
-- Mỗi order item tham chiếu đến một product
-- Reference: `orders.items.product → products._id`
+2. **Product → Brand.carModels** (Many-to-Many)
+   - `Product.compatibleModels.carModelId` references `Brand.carModels._id`
 
-### 3. Brand → Product Compatible Models (Embedded)
-- Product lưu trữ thông tin các car models tương thích
-- Sử dụng cả ObjectId và tên để tối ưu performance
+3. **Order → Product** (Many-to-Many)
+   - `Order.items.product` references `Product._id`
 
----
+### Biểu đồ mối quan hệ:
 
-## Tối ưu hóa và Index
+```
+Brand (1) -----> (n) Product
+  |                    |
+  |                    |
+  v                    v
+carModels (n) <-> (n) compatibleModels
+                       |
+                       v
+                   Order.items (n)
+```
 
-### Text Search Index
-- Products: Tìm kiếm theo tên, mô tả, tags, mã code
-- Brands: Tìm kiếm theo tên hãng
-- Blogs: Tìm kiếm theo title và content
+## Chiến lược Index
 
-### Performance Index
-- Products có nhiều index để tối ưu các truy vấn phổ biến
-- Compound index cho blog (category + status)
-- Single field index cho các trường thường dùng filter
+### Performance Index:
+- **Text Search:** Tối ưu cho tìm kiếm sản phẩm và blog
+- **Filter Index:** Tối ưu cho lọc theo brand, price, status
+- **Compound Index:** Tối ưu cho query phức tạp
 
----
+### Đề xuất bổ sung:
+```javascript
+// Product collection
+db.products.createIndex({ "compatibleModels.carModelId": 1, "isActive": 1 })
+db.products.createIndex({ "price": 1, "brand": 1 })
 
-## Chính sách bảo mật
+// Order collection  
+db.orders.createIndex({ "orderDate": -1, "status": 1 })
+db.orders.createIndex({ "customer.email": 1 })
 
-### 1. Authentication
-- Admin password được hash với bcryptjs
-- Session-based authentication với JWT tokens
+// Blog collection
+db.blogs.createIndex({ "status": 1, "publishDate": -1 })
+db.blogs.createIndex({ "category": 1, "featured": 1 })
+```
 
-### 2. Data Validation
-- Mongoose schema validation cho tất cả fields
-- Express-validator cho API input validation
+## Validation Rules
 
-### 3. File Upload
-- Image upload với Cloudinary integration
-- Temporary file cleanup mechanisms
+### Ở tầng Schema:
+- Required fields validation
+- Data type validation  
+- Min/Max length validation
+- Enum validation
+- Custom validation
 
----
+### Ở tầng Application:
+- `express-validator` cho request validation
+- Business logic validation trong controllers
 
 ## Backup và Migration
 
-### 1. Data Seeding
-- Script `seedData.js` để tạo dữ liệu mẫu
-- Separate seeding cho brands và products
+### Backup Strategy:
+```bash
+# Daily backup
+mongodump --uri="mongodb://localhost:27017/locgiogiasi" --out="/backup/$(date +%Y%m%d)"
 
-### 2. Migration Scripts
-- `remove-cart-migration.js`: Migration để loại bỏ cart functionality
-- `remove-contact-migration.js`: Migration cho contact system
+# Restore
+mongorestore --uri="mongodb://localhost:27017/locgiogiasi" /backup/20241201
+```
 
----
+### Migration Scripts:
+- `scripts/remove-cart-migration.js` 
+- `scripts/remove-contact-migration.js`
 
-## Monitoring và Logging
+## Environment Configuration
 
-### 1. Database Connection
-- Automatic reconnection handling
-- Connection status monitoring
+### Required Environment Variables:
+```env
+MONGODB_URI=mongodb://localhost:27017/locgiogiasi
+DB_NAME=locgiogiasi
+```
 
-### 2. Error Handling
-- Comprehensive error middleware
-- Validation error standardization
+### Development vs Production:
+- **Development:** Local MongoDB instance
+- **Production:** MongoDB Atlas hoặc dedicated server
+- **Connection Pooling:** Mongoose default configuration
 
-### 3. Performance Monitoring
-- Index usage tracking
-- Query performance optimization
+## Monitoring và Performance
 
----
+### Logging:
+- Database connection status
+- Query performance monitoring
+- Error tracking
 
-*Tài liệu này được cập nhật lần cuối: Tháng 7, 2025*
+### Recommended Tools:
+- **MongoDB Compass** cho GUI management
+- **MongoDB Atlas** cho cloud hosting
+- **Mongoose Debug** cho development
+
+## Best Practices áp dụng
+
+1. **Schema Design:**
+   - Embedded documents cho nested data
+   - References cho large collections
+   - Virtual fields cho computed values
+
+2. **Performance:**
+   - Proper indexing strategy
+   - Query optimization
+   - Connection pooling
+
+3. **Security:**
+   - Password hashing
+   - Input validation
+   - Environment variables for secrets
+
+4. **Maintenance:**
+   - Auto-generated timestamps
+   - Soft delete patterns (isActive fields)
+   - Migration scripts

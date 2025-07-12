@@ -1,711 +1,858 @@
-# Tài liệu API - Hệ thống LocGioGiaSi
+# Tài liệu API - LocGioGiaSi Backend
 
 ## Tổng quan
-API RESTful được xây dựng với Node.js, Express.js và MongoDB để quản lý cửa hàng bán phụ tùng ô tô trực tuyến.
 
-**Base URL**: `http://localhost:3000/api`
-**Authentication**: JWT Bearer Token (cho các endpoint quản trị)
+API RESTful cho hệ thống quản lý cửa hàng lọc gió ô tô LocGioGiaSi. API được xây dựng với Node.js, Express.js và MongoDB, cung cấp các endpoint cho frontend, admin panel và mobile app.
 
----
+**Base URL:** `http://localhost:3000/api`
 
-## Endpoints Tổng quan
+**API Version:** 1.0.0
 
+## Authentication
+
+### JWT Token Authentication
+
+Hệ thống sử dụng JWT (JSON Web Token) để xác thực admin.
+
+**Header format:**
 ```
-GET /api/                    # API documentation
-GET /api/health             # Health check
-```
-
----
-
-## 1. Authentication & Admin Management
-**Base Path**: `/api/admin`
-
-### 1.1 Đăng nhập Admin
-```http
-POST /api/admin/login
+Authorization: Bearer <jwt_token>
 ```
 
-**Request Body**:
+**Token expiry:** 7 days (configurable via `JWT_EXPIRES_IN`)
+
+### Protected Routes
+Các route admin yêu cầu authentication:
+- Tất cả `/admin/*` routes (trừ login)
+- POST, PUT, DELETE operations trên products, blogs, brands
+- Statistics endpoints
+
+## API Endpoints
+
+### 1. Admin Management (`/api/admin`)
+
+#### POST `/api/admin/login`
+**Mục đích:** Đăng nhập admin
+
+**Request Body:**
 ```json
 {
-  "username": "string",    // Username hoặc email
-  "password": "string"     // Mật khẩu
+  "username": "admin",  // username hoặc email
+  "password": "password123"
 }
 ```
 
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "token": "jwt_token_here",
-  "admin": {
-    "_id": "admin_id",
-    "username": "admin_username",
-    "email": "admin@email.com",
-    "lastLogin": "2025-07-11T00:00:00.000Z"
+  "message": "Login successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "admin": {
+      "id": "64a7b8c9d1e2f3g4h5i6j7k8",
+      "username": "admin",
+      "email": "admin@example.com"
+    }
   }
 }
 ```
 
-### 1.2 Lấy thông tin Admin hiện tại
-```http
-GET /api/admin/profile
-Authorization: Bearer {token}
-```
+#### GET `/api/admin/profile` 🔒
+**Mục đích:** Lấy thông tin profile admin hiện tại
 
-### 1.3 Cập nhật thông tin Admin
-```http
-PUT /api/admin/profile
-Authorization: Bearer {token}
-```
-
-**Request Body**:
-```json
-{
-  "email": "new_email@example.com"
-}
-```
-
-### 1.4 Đổi mật khẩu
-```http
-PUT /api/admin/change-password
-Authorization: Bearer {token}
-```
-
-**Request Body**:
-```json
-{
-  "currentPassword": "current_password",
-  "newPassword": "new_password"
-}
-```
-
-### 1.5 Quản lý Admin (Super Admin)
-```http
-GET /api/admin                    # Lấy danh sách admin
-POST /api/admin                   # Tạo admin mới
-PUT /api/admin/:id               # Cập nhật admin
-DELETE /api/admin/:id            # Xóa admin
-```
-
----
-
-## 2. Brand Management
-**Base Path**: `/api/brands`
-
-### 2.1 Lấy danh sách hãng xe
-```http
-GET /api/brands
-```
-
-**Query Parameters**:
-- `isActive`: `true|false` - Lọc theo trạng thái
-
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "brands": [
+  "data": {
+    "id": "64a7b8c9d1e2f3g4h5i6j7k8",
+    "username": "admin", 
+    "email": "admin@example.com",
+    "lastLogin": "2024-07-12T10:30:00.000Z",
+    "createdAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+#### PUT `/api/admin/profile` 🔒
+**Mục đích:** Cập nhật thông tin profile
+
+**Request Body:**
+```json
+{
+  "email": "newemail@example.com"
+}
+```
+
+#### PUT `/api/admin/change-password` 🔒
+**Mục đích:** Đổi mật khẩu admin
+
+**Request Body:**
+```json
+{
+  "currentPassword": "oldpassword",
+  "newPassword": "newpassword123"
+}
+```
+
+#### GET `/api/admin` 🔒
+**Mục đích:** Lấy danh sách tất cả admin (super admin)
+
+#### POST `/api/admin` 🔒
+**Mục đích:** Tạo admin mới (super admin)
+
+**Request Body:**
+```json
+{
+  "username": "newadmin",
+  "email": "newadmin@example.com", 
+  "password": "password123"
+}
+```
+
+### 2. Product Management (`/api/products`)
+
+#### GET `/api/products`
+**Mục đích:** Lấy danh sách sản phẩm (public)
+
+**Query Parameters:**
+- `page` (number): Trang hiện tại (default: 1)
+- `limit` (number): Số sản phẩm mỗi trang (default: 10)
+- `search` (string): Tìm kiếm theo tên, mã, mô tả
+- `brand` (string): Filter theo brand (ObjectId hoặc tên)
+- `minPrice` (number): Giá tối thiểu
+- `maxPrice` (number): Giá tối đa
+- `year` (string): Năm sản xuất
+- `carModel` (string): Dòng xe
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
     {
-      "_id": "brand_id",
+      "_id": "64a7b8c9d1e2f3g4h5i6j7k8",
+      "name": "Lọc gió Toyota Camry",
+      "code": "TY001",
+      "brand": {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k9",
+        "name": "Toyota"
+      },
+      "price": 450000,
+      "description": "Lọc gió chính hãng cho Toyota Camry",
+      "images": [
+        {
+          "public_id": "products/sample1",
+          "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/products/sample1.jpg",
+          "alt": "Lọc gió Toyota Camry"
+        }
+      ],
+      "compatibleModels": [
+        {
+          "carModelId": "64a7b8c9d1e2f3g4h5i6j7k0",
+          "carModelName": "Camry",
+          "years": ["2018", "2019", "2020"]
+        }
+      ],
+      "stock": 50,
+      "origin": "Japan",
+      "isActive": true
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 150,
+    "pages": 15
+  }
+}
+```
+
+#### GET `/api/products/:id`
+**Mục đích:** Lấy chi tiết sản phẩm
+
+#### GET `/api/products/search/:code`
+**Mục đích:** Tìm sản phẩm theo mã
+
+#### GET `/api/products/brand/:brand`
+**Mục đích:** Lấy sản phẩm theo hãng
+
+#### GET `/api/products/car-model/:carModel`
+**Mục đích:** Lấy sản phẩm theo dòng xe
+
+#### POST `/api/products` 🔒
+**Mục đích:** Tạo sản phẩm mới
+
+**Content-Type:** `multipart/form-data`
+
+**Request Body:**
+```json
+{
+  "name": "Lọc gió Toyota Camry",
+  "code": "TY001",
+  "brand": "64a7b8c9d1e2f3g4h5i6j7k9",
+  "compatibleModels": "[{\"carModelId\":\"64a7b8c9d1e2f3g4h5i6j7k0\",\"carModelName\":\"Camry\",\"years\":[\"2018\",\"2019\"]}]",
+  "price": 450000,
+  "description": "Lọc gió chính hãng",
+  "stock": 50,
+  "origin": "Japan",
+  "material": "Paper filter",
+  "dimensions": "30x20x5 cm",
+  "warranty": "12 months",
+  "images": [File, File] // Upload files
+}
+```
+
+#### PUT `/api/products/:id` 🔒
+**Mục đích:** Cập nhật sản phẩm
+
+#### DELETE `/api/products/:id` 🔒
+**Mục đích:** Xóa sản phẩm
+
+#### PATCH `/api/products/:id/status` 🔒
+**Mục đích:** Cập nhật trạng thái sản phẩm
+
+### 3. Brand Management (`/api/brands`)
+
+#### GET `/api/brands`
+**Mục đích:** Lấy danh sách hãng xe
+
+**Query Parameters:**
+- `page`, `limit`: Pagination
+- `search`: Tìm kiếm theo tên
+- `isActive`: Filter theo trạng thái
+- `sortBy`, `sortOrder`: Sắp xếp
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "64a7b8c9d1e2f3g4h5i6j7k9",
       "name": "Toyota",
       "carModels": [
         {
-          "_id": "model_id",
+          "_id": "64a7b8c9d1e2f3g4h5i6j7k0",
           "name": "Camry",
-          "years": ["2020", "2021", "2022"],
-          "isActive": true
+          "years": ["2018", "2019", "2020", "2021"],
+          "isActive": true,
+          "createdAt": "2024-01-01T00:00:00.000Z"
         }
       ],
-      "isActive": true
+      "isActive": true,
+      "createdAt": "2024-01-01T00:00:00.000Z"
     }
   ]
 }
 ```
 
-### 2.2 Lấy thông tin hãng xe
-```http
-GET /api/brands/:id
-```
+#### GET `/api/brands/:id`
+**Mục đích:** Lấy chi tiết hãng xe
 
-### 2.3 Lấy danh sách dòng xe theo hãng
-```http
-GET /api/brands/:id/car-models
-```
+#### GET `/api/brands/:id/car-models`
+**Mục đích:** Lấy danh sách dòng xe của hãng
 
-### 2.4 Tạo hãng xe mới (Admin)
-```http
-POST /api/brands
-Authorization: Bearer {token}
-```
+#### POST `/api/brands` 🔒
+**Mục đích:** Tạo hãng xe mới
 
-**Request Body**:
+**Request Body:**
 ```json
 {
-  "name": "Honda",
+  "name": "Toyota",
   "isActive": true
 }
 ```
 
-### 2.5 Cập nhật hãng xe (Admin)
-```http
-PUT /api/brands/:id
-Authorization: Bearer {token}
-```
+#### PUT `/api/brands/:id` 🔒
+**Mục đích:** Cập nhật thông tin hãng
 
-### 2.6 Xóa hãng xe (Admin)
-```http
-DELETE /api/brands/:id
-Authorization: Bearer {token}
-```
+#### DELETE `/api/brands/:id` 🔒
+**Mục đích:** Xóa hãng xe
 
-### 2.7 Quản lý dòng xe (Admin)
-```http
-POST /api/brands/:brandId/car-models          # Thêm dòng xe
-PUT /api/brands/:brandId/car-models/:modelId   # Cập nhật dòng xe
-DELETE /api/brands/:brandId/car-models/:modelId # Xóa dòng xe
-```
+#### POST `/api/brands/:brandId/car-models` 🔒
+**Mục đích:** Thêm dòng xe mới cho hãng
 
-**Request Body (Car Model)**:
+**Request Body:**
 ```json
 {
-  "name": "Civic",
-  "years": ["2020", "2021", "2022", "2023"],
+  "name": "Camry",
+  "years": ["2018", "2019", "2020"],
   "isActive": true
 }
 ```
 
----
+#### PUT `/api/brands/:brandId/car-models/:carModelId` 🔒
+**Mục đích:** Cập nhật thông tin dòng xe
 
-## 3. Product Management
-**Base Path**: `/api/products`
+#### DELETE `/api/brands/:brandId/car-models/:carModelId` 🔒
+**Mục đích:** Xóa dòng xe
 
-### 3.1 Lấy danh sách sản phẩm
-```http
-GET /api/products
-```
+### 4. Order Management (`/api/orders`)
 
-**Query Parameters**:
-- `page`: Số trang (default: 1)
-- `limit`: Số sản phẩm/trang (default: 10)
-- `search`: Tìm kiếm theo tên, mô tả, tags
-- `brand`: ID hãng xe
-- `carModel`: Tên dòng xe
-- `minPrice`: Giá tối thiểu
-- `maxPrice`: Giá tối đa
-- `isActive`: `true|false`
+#### POST `/api/orders`
+**Mục đích:** Tạo đơn hàng mới (public)
 
-**Response**:
-```json
-{
-  "success": true,
-  "products": [
-    {
-      "_id": "product_id",
-      "name": "LocGioGiaSi Toyota Camry",
-      "code": "LG-TOY-CAM-001",
-      "brand": {
-        "_id": "brand_id",
-        "name": "Toyota"
-      },
-      "compatibleModels": [
-        {
-          "carModelId": "model_id",
-          "carModelName": "Camry",
-          "years": ["2020", "2021"]
-        }
-      ],
-      "price": 250000,
-      "description": "LocGioGiaSi chất lượng cao...",
-      "images": [
-        {
-          "public_id": "cloudinary_id",
-          "url": "https://cloudinary.com/image.jpg",
-          "width": 800,
-          "height": 600,
-          "alt": "LocGioGiaSi Toyota Camry"
-        }
-      ],
-      "stock": 10,
-      "specifications": {
-        "material": "Giấy lọc cao cấp",
-        "dimensions": "245 x 200 x 30mm"
-      },
-      "tags": ["locgiogiasi", "toyota", "camry"],
-      "isActive": true
-    }
-  ],
-  "pagination": {
-    "currentPage": 1,
-    "totalPages": 5,
-    "totalProducts": 50,
-    "hasNext": true,
-    "hasPrev": false
-  }
-}
-```
-
-### 3.2 Tìm sản phẩm theo mã code
-```http
-GET /api/products/search/:code
-```
-
-### 3.3 Lấy sản phẩm theo hãng xe
-```http
-GET /api/products/brand/:brand
-```
-
-### 3.4 Lấy sản phẩm theo dòng xe
-```http
-GET /api/products/car-model/:carModel
-```
-
-### 3.5 Lấy thông tin sản phẩm
-```http
-GET /api/products/:id
-```
-
-### 3.6 Lấy dòng xe tương thích theo hãng
-```http
-GET /api/products/brand/:brandId/car-models
-```
-
-### 3.7 Tạo sản phẩm mới (Admin)
-```http
-POST /api/products
-Authorization: Bearer {token}
-Content-Type: multipart/form-data
-```
-
-**Request Body (FormData)**:
-```
-name: "LocGioGiaSi Honda Civic"
-code: "LG-HON-CIV-001"
-brand: "brand_object_id"
-compatibleModels: JSON.stringify([{
-  carModelId: "model_id",
-  carModelName: "Civic",
-  years: ["2020", "2021"]
-}])
-price: 280000
-description: "Mô tả sản phẩm..."
-stock: 15
-specifications: JSON.stringify({
-  "material": "Giấy lọc cao cấp",
-  "dimensions": "250 x 200 x 35mm"
-})
-tags: JSON.stringify(["locgiogiasi", "honda", "civic"])
-images: [File, File, ...] // Upload files
-```
-
-### 3.8 Cập nhật sản phẩm (Admin)
-```http
-PUT /api/products/:id
-Authorization: Bearer {token}
-Content-Type: multipart/form-data
-```
-
-### 3.9 Xóa sản phẩm (Admin)
-```http
-DELETE /api/products/:id
-Authorization: Bearer {token}
-```
-
-### 3.10 Cập nhật trạng thái sản phẩm (Admin)
-```http
-PATCH /api/products/:id/status
-Authorization: Bearer {token}
-```
-
-**Request Body**:
-```json
-{
-  "isActive": false
-}
-```
-
----
-
-## 4. Order Management
-**Base Path**: `/api/orders`
-
-### 4.1 Tạo đơn hàng
-```http
-POST /api/orders
-```
-
-**Request Body**:
+**Request Body:**
 ```json
 {
   "customer": {
     "name": "Nguyễn Văn A",
-    "email": "customer@email.com",
+    "email": "customer@example.com",
     "phone": "0123456789",
     "address": "123 Đường ABC",
-    "city": "TP.HCM",
+    "city": "Hồ Chí Minh",
     "district": "Quận 1",
     "ward": "Phường Bến Nghé"
   },
   "items": [
     {
-      "productId": "product_object_id",
+      "productId": "64a7b8c9d1e2f3g4h5i6j7k8",
       "quantity": 2
     }
   ],
-  "notes": "Ghi chú đặc biệt"
+  "notes": "Ghi chú đặc biệt",
+  "paymentMethod": "cash"
 }
 ```
 
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "order": {
-    "_id": "order_id",
-    "orderNumber": "ORD-20250711-1234",
-    "customer": { /* customer info */ },
-    "items": [
-      {
-        "product": { /* populated product info */ },
-        "quantity": 2,
-        "price": 250000
-      }
-    ],
-    "status": "not contacted",
-    "totalAmount": 500000,
-    "totalItems": 2,
-    "orderDate": "2025-07-11T00:00:00.000Z"
+  "message": "Order created successfully. We will contact you soon for quotation.",
+  "data": {
+    "orderNumber": "ORD-20240712-1234",
+    "order": {
+      "_id": "64a7b8c9d1e2f3g4h5i6j7k8",
+      "orderNumber": "ORD-20240712-1234",
+      "customer": { /* customer info */ },
+      "items": [ /* order items */ ],
+      "status": "not contacted",
+      "totalAmount": 900000,
+      "totalItems": 2,
+      "orderDate": "2024-07-12T10:30:00.000Z"
+    }
   }
 }
 ```
 
-### 4.2 Tra cứu đơn hàng
-```http
-GET /api/orders/track/:orderNumber
-```
+#### GET `/api/orders/track/:orderNumber`
+**Mục đích:** Tra cứu đơn hàng bằng số đơn (public)
 
-### 4.3 Lấy danh sách đơn hàng (Admin)
-```http
-GET /api/orders
-Authorization: Bearer {token}
-```
+#### GET `/api/orders` 🔒
+**Mục đích:** Lấy danh sách đơn hàng (admin)
 
-**Query Parameters**:
-- `page`: Số trang
-- `limit`: Số đơn hàng/trang
-- `status`: Trạng thái đơn hàng
-- `startDate`: Ngày bắt đầu (YYYY-MM-DD)
-- `endDate`: Ngày kết thúc (YYYY-MM-DD)
+**Query Parameters:**
+- `page`, `limit`: Pagination
+- `status`: Filter theo trạng thái
+- `fromDate`, `toDate`: Filter theo thời gian
+- `customerEmail`: Filter theo email khách hàng
 
-### 4.4 Lấy thông tin đơn hàng (Admin)
-```http
-GET /api/orders/:id
-Authorization: Bearer {token}
-```
+#### GET `/api/orders/:id` 🔒
+**Mục đích:** Lấy chi tiết đơn hàng
 
-### 4.5 Cập nhật trạng thái đơn hàng (Admin)
-```http
-PUT /api/orders/:id/status
-Authorization: Bearer {token}
-```
+#### PUT `/api/orders/:id/status` 🔒
+**Mục đích:** Cập nhật trạng thái đơn hàng
 
-**Request Body**:
+**Request Body:**
 ```json
 {
   "status": "contacted"
 }
 ```
 
-### 4.6 Xóa đơn hàng (Admin)
-```http
-DELETE /api/orders/:id
-Authorization: Bearer {token}
-```
+#### DELETE `/api/orders/:id` 🔒
+**Mục đích:** Xóa đơn hàng
 
----
+### 5. Blog Management (`/api/blogs`)
 
-## 5. Blog Management
-**Base Path**: `/api/blogs`
+#### GET `/api/blogs`
+**Mục đích:** Lấy danh sách blog (published only)
 
-### 5.1 Lấy danh sách blog (Public)
-```http
-GET /api/blogs
-```
+**Query Parameters:**
+- `page`, `limit`: Pagination
+- `category`: Filter theo danh mục
+- `tag`: Filter theo tag
+- `search`: Tìm kiếm full-text
 
-**Query Parameters**:
-- `page`: Số trang
-- `limit`: Số bài/trang
-- `category`: Danh mục
-- `tag`: Tag
-- `search`: Tìm kiếm
-
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "blogs": [
-    {
-      "_id": "blog_id",
-      "title": "Cách bảo dưỡng locgiogiasi ô tô",
-      "slug": "cach-bao-duong-loc-gio-o-to",
-      "content": "Nội dung bài viết...",
-      "featuredImage": "https://cloudinary.com/blog-image.jpg",
-      "author": "Admin",
-      "category": "Bảo dưỡng",
-      "tags": ["bảo dưỡng", "locgiogiasi"],
-      "status": "published",
-      "featured": false,
-      "publishDate": "2025-07-11T00:00:00.000Z"
+  "data": {
+    "blogs": [
+      {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k8",
+        "title": "Cách chọn lọc gió ô tô phù hợp",
+        "slug": "cach-chon-loc-gio-o-to-phu-hop",
+        "featuredImage": "https://res.cloudinary.com/demo/image/upload/blogs/blog1.jpg",
+        "author": "Admin",
+        "category": "Hướng dẫn",
+        "tags": ["lọc gió", "bảo dưỡng"],
+        "publishDate": "2024-07-10T00:00:00.000Z",
+        "featured": true
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalBlogs": 47,
+      "limit": 10
     }
-  ]
+  }
 }
 ```
 
-### 5.2 Lấy blog nổi bật
-```http
-GET /api/blogs/featured
-```
+#### GET `/api/blogs/featured`
+**Mục đích:** Lấy blog nổi bật
 
-### 5.3 Lấy danh mục blog
-```http
-GET /api/blogs/categories
-```
+#### GET `/api/blogs/categories`
+**Mục đích:** Lấy danh sách categories
 
-### 5.4 Lấy tags blog
-```http
-GET /api/blogs/tags
-```
+#### GET `/api/blogs/tags`
+**Mục đích:** Lấy danh sách tags
 
-### 5.5 Lấy blog mới nhất
-```http
-GET /api/blogs/recent
-```
+#### GET `/api/blogs/recent`
+**Mục đích:** Lấy blog mới nhất
 
-**Query Parameters**:
-- `limit`: Số lượng bài (default: 5)
+#### GET `/api/blogs/:slug`
+**Mục đích:** Lấy blog theo slug
 
-### 5.6 Lấy blog theo slug
-```http
-GET /api/blogs/:slug
-```
+#### GET `/api/blogs/admin/all` 🔒
+**Mục đích:** Lấy tất cả blog cho admin (bao gồm hidden)
 
-### 5.7 Quản lý blog (Admin)
-```http
-GET /api/blogs/admin/all       # Lấy tất cả blog (bao gồm draft)
-GET /api/blogs/admin/:id       # Lấy blog theo ID
-POST /api/blogs               # Tạo blog mới
-PUT /api/blogs/:id            # Cập nhật blog
-DELETE /api/blogs/:id         # Xóa blog
-```
+#### GET `/api/blogs/admin/:id` 🔒
+**Mục đích:** Lấy chi tiết blog cho admin
 
-**Request Body (Tạo/Cập nhật blog)**:
+#### POST `/api/blogs` 🔒
+**Mục đích:** Tạo blog mới
+
+**Content-Type:** `multipart/form-data`
+
+**Request Body:**
 ```json
 {
-  "title": "Tiêu đề bài viết",
-  "content": "Nội dung bài viết đầy đủ...",
-  "author": "Tên tác giả",
-  "category": "Danh mục",
-  "tags": ["tag1", "tag2"],
-  "featuredImage": "URL_ảnh_đại_diện",
+  "title": "Tiêu đề blog",
+  "content": "Nội dung chi tiết...",
+  "author": "Tác giả",
+  "category": "Hướng dẫn",
+  "tags": "lọc gió,bảo dưỡng",
   "status": "published",
-  "featured": true
+  "featured": false,
+  "featuredImage": File // Upload file
 }
 ```
 
----
+#### PUT `/api/blogs/:id` 🔒
+**Mục đích:** Cập nhật blog
 
-## 6. Contact Management
-**Base Path**: `/api/contacts`
+#### DELETE `/api/blogs/:id` 🔒
+**Mục đích:** Xóa blog
 
-### 6.1 Gửi liên hệ
-```http
-POST /api/contacts
-```
+### 6. Contact (`/api/contacts`)
 
-**Request Body**:
+#### POST `/api/contacts`
+**Mục đích:** Gửi tin nhắn liên hệ (public)
+
+**Request Body:**
 ```json
 {
-  "name": "Nguyễn Văn B",
-  "email": "contact@email.com",
-  "phone": "0987654321",
+  "name": "Nguyễn Văn A",
+  "email": "customer@example.com",
+  "phone": "0123456789",
   "subject": "Hỏi về sản phẩm",
-  "message": "Tôi muốn hỏi về..."
+  "message": "Tôi muốn hỏi về lọc gió cho xe Toyota Camry 2020"
 }
 ```
 
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "message": "Email đã được gửi thành công"
+  "message": "Tin nhắn của bạn đã được gửi thành công. Chúng tôi sẽ phản hồi sớm nhất có thể.",
+  "data": {
+    "name": "Nguyễn Văn A",
+    "email": "customer@example.com", 
+    "subject": "Hỏi về sản phẩm",
+    "sentAt": "2024-07-12T10:30:00.000Z"
+  }
 }
 ```
 
----
+### 7. Settings (`/api/settings`)
 
-## 7. Settings Management
-**Base Path**: `/api/settings`
+#### GET `/api/settings`
+**Mục đích:** Lấy thông tin cài đặt cửa hàng (public)
 
-### 7.1 Lấy cài đặt cửa hàng
-```http
-GET /api/settings
-```
-
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "settings": {
-    "_id": "settings_id",
+  "data": {
+    "_id": "64a7b8c9d1e2f3g4h5i6j7k8",
     "storeName": "LocGioGiaSi",
-    "address": "123 Đường XYZ, Quận ABC, TP.HCM",
+    "address": "123 Đường ABC, Quận 1, TP.HCM",
     "phone": "0123456789",
     "email": "info@locgiogiasi.com",
-    "logo": "https://cloudinary.com/logo.png"
+    "logo": "https://res.cloudinary.com/demo/image/upload/logo.png"
   }
 }
 ```
 
-### 7.2 Cập nhật cài đặt (Admin)
-```http
-PUT /api/settings
-Authorization: Bearer {token}
-```
+#### PUT `/api/settings` 🔒
+**Mục đích:** Cập nhật thông tin cài đặt
 
-**Request Body**:
+**Request Body:**
 ```json
 {
-  "storeName": "LocGioGiaSi",
-  "address": "123 Đường XYZ mới",
-  "phone": "0123456789",
-  "email": "info@locgiogiasi.com",
-  "logo": "https://cloudinary.com/new-logo.png"
+  "storeName": "LocGioGiaSi - Chuyên lọc gió ô tô",
+  "address": "456 Đường XYZ, Quận 2, TP.HCM", 
+  "phone": "0987654321",
+  "email": "contact@locgiogiasi.com",
+  "logo": "https://new-logo-url.com"
 }
 ```
 
----
+### 8. Statistics (`/api/statistics`) 🔒
 
-## 8. Statistics Management
-**Base Path**: `/api/statistics`
+#### GET `/api/statistics/dashboard`
+**Mục đích:** Lấy thống kê tổng quan dashboard
 
-### 8.1 Thống kê dashboard (Admin)
-```http
-GET /api/statistics/dashboard
-Authorization: Bearer {token}
-```
-
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
-  "stats": {
-    "totalProducts": 150,
-    "totalOrders": 45,
-    "totalRevenue": 12500000,
-    "totalCustomers": 38,
-    "recentOrders": [ /* 5 đơn hàng gần nhất */ ],
-    "topProducts": [ /* 5 sản phẩm bán chạy */ ]
+  "data": {
+    "products": {
+      "total": 150,
+      "active": 145,
+      "inactive": 5,
+      "lowStock": 8
+    },
+    "orders": {
+      "total": 1250,
+      "thisMonth": 89,
+      "contacted": 1100,
+      "notContacted": 150
+    },
+    "revenue": {
+      "total": 125000000,
+      "thisMonth": 8500000,
+      "lastMonth": 7200000,
+      "growth": 18.1
+    },
+    "recentOrders": [ /* 5 đơn hàng gần nhất */ ]
   }
 }
 ```
 
-### 8.2 Thống kê sản phẩm (Admin)
-```http
-GET /api/statistics/products
-Authorization: Bearer {token}
+#### GET `/api/statistics/products`
+**Mục đích:** Thống kê sản phẩm
+
+#### GET `/api/statistics/orders`
+**Mục đích:** Thống kê đơn hàng
+
+#### GET `/api/statistics/contacts`
+**Mục đích:** Thống kê liên hệ
+
+### 9. Health Check
+
+#### GET `/api/health`
+**Mục đích:** Kiểm tra tình trạng API
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "API is running",
+  "timestamp": "2024-07-12T10:30:00.000Z"
+}
 ```
 
-### 8.3 Thống kê đơn hàng (Admin)
-```http
-GET /api/statistics/orders
-Authorization: Bearer {token}
-```
+#### GET `/api`
+**Mục đích:** API documentation overview
 
-### 8.4 Thống kê liên hệ (Admin)
-```http
-GET /api/statistics/contacts
-Authorization: Bearer {token}
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Welcome to API",
+  "version": "1.0.0",
+  "endpoints": {
+    "products": "/api/products",
+    "orders": "/api/orders",
+    "blogs": "/api/blogs",
+    "admin": "/api/admin",
+    "contacts": "/api/contacts", 
+    "statistics": "/api/statistics",
+    "settings": "/api/settings",
+    "brands": "/api/brands"
+  }
+}
 ```
-
----
 
 ## Error Handling
 
-### Error Response Format
+### Standard Error Response Format:
+
 ```json
 {
   "success": false,
-  "message": "Error message",
+  "message": "Error description",
+  "error": "Detailed error message", // optional
+  "errors": [ /* validation errors */ ] // optional
+}
+```
+
+### HTTP Status Codes:
+
+- **200**: Success
+- **201**: Created successfully
+- **400**: Bad Request (validation errors)
+- **401**: Unauthorized (invalid/missing token)
+- **404**: Not Found
+- **500**: Internal Server Error
+
+### Common Error Types:
+
+1. **Validation Error (400)**:
+```json
+{
+  "success": false,
+  "message": "Validation errors",
   "errors": [
     {
       "field": "email",
-      "message": "Email không hợp lệ"
+      "message": "Email is required"
     }
   ]
 }
 ```
 
-### Common HTTP Status Codes
-- `200`: Success
-- `201`: Created
-- `400`: Bad Request (validation errors)
-- `401`: Unauthorized
-- `403`: Forbidden
-- `404`: Not Found
-- `500`: Internal Server Error
+2. **Authentication Error (401)**:
+```json
+{
+  "success": false,
+  "message": "No token provided, authorization denied"
+}
+```
 
----
+3. **Not Found Error (404)**:
+```json
+{
+  "success": false,
+  "message": "Product not found"
+}
+```
 
-## Authentication
-
-### JWT Token
-- Token được gửi trong header: `Authorization: Bearer {token}`
-- Token có thời hạn (cấu hình trong .env)
-- Token chứa thông tin admin ID và expiration
-
-### Protected Routes
-Tất cả routes có prefix `/admin` (trừ login) và các routes quản lý cần authentication:
-- Product management (POST, PUT, DELETE)
-- Order management (GET, PUT, DELETE)
-- Blog management (POST, PUT, DELETE)
-- Settings management (PUT)
-- Statistics (tất cả)
-
----
+4. **Database Error (500)**:
+```json
+{
+  "success": false,
+  "message": "Internal server error",
+  "error": "Database connection failed"
+}
+```
 
 ## File Upload
 
-### Supported Formats
-- Images: JPG, JPEG, PNG, WebP
-- Max file size: 10MB
-- Multiple file upload support
+### Supported endpoints:
+- `POST /api/products` - Multiple images
+- `PUT /api/products/:id` - Multiple images  
+- `POST /api/blogs` - Single featured image
+- `PUT /api/blogs/:id` - Single featured image
 
-### Cloudinary Integration
-- Automatic image optimization
-- Multiple size variants
-- CDN delivery
-- Public ID management
+### Configuration:
+- **Storage**: Cloudinary
+- **Max file size**: 10MB
+- **Allowed formats**: JPG, JPEG, PNG, WebP
+- **Temp upload**: Files temporarily stored in `/uploads/temp/`
 
----
+### Request format:
+```javascript
+Content-Type: multipart/form-data
 
-## Rate Limiting & Security
+// Multiple files
+images: [File, File, File]
 
-### CORS Configuration
-- Configurable origins
-- Credentials support
-- Preflight handling
+// Single file  
+featuredImage: File
+```
 
-### Input Validation
-- Express-validator for all inputs
-- Mongoose schema validation
-- File type validation
-- Size limits
+### Response format:
+```json
+{
+  "public_id": "products/sample1_xyz123",
+  "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/products/sample1_xyz123.jpg",
+  "width": 1200,
+  "height": 800,
+  "alt": "Product image"
+}
+```
 
-### Security Headers
-- JSON size limits (10MB)
-- URL encoding limits
-- Error message sanitization
+## Email Integration
 
----
+### Features:
+- Order confirmation emails
+- Contact form notifications
+- Admin notifications
 
-*Tài liệu này được cập nhật lần cuối: Tháng 7, 2025*
+### Configuration:
+```env
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+```
+
+### Email Templates:
+1. **Order Confirmation** - Sent to customer and admin
+2. **Contact Form** - Sent to admin
+3. **Password Reset** - Future feature
+
+## Pagination
+
+### Standard pagination format:
+
+**Request:**
+```
+GET /api/products?page=2&limit=20
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [ /* items */ ],
+  "pagination": {
+    "page": 2,
+    "limit": 20,
+    "total": 150,
+    "pages": 8
+  }
+}
+```
+
+## Search & Filtering
+
+### Text Search:
+- **Products**: name, code, description, compatible models
+- **Blogs**: title, content (MongoDB text index)
+
+### Filters:
+- **Products**: brand, price range, year, car model, active status
+- **Orders**: status, date range, customer email
+- **Blogs**: category, tags, status
+
+### Example:
+```
+GET /api/products?search=toyota&brand=64a7b8c9d1e2f3g4h5i6j7k9&minPrice=100000&maxPrice=500000&year=2020
+```
+
+## Rate Limiting
+
+### Future Implementation:
+- **Public endpoints**: 100 requests/hour per IP
+- **Admin endpoints**: 1000 requests/hour per token
+- **Contact form**: 5 submissions/hour per IP
+
+## API Versioning
+
+### Current: v1.0.0
+- **Strategy**: URL path versioning (future: `/api/v2/`)
+- **Backward compatibility**: Maintained for major versions
+- **Deprecation policy**: 6 months notice
+
+## Webhooks (Future)
+
+### Planned events:
+- `order.created`
+- `order.status_updated`
+- `product.out_of_stock`
+- `contact.received`
+
+## Development Tools
+
+### Testing API:
+- **Postman Collection**: Available in `/docs/postman/`
+- **curl examples**: Available in this documentation
+- **Swagger UI**: Future implementation
+
+### Environment:
+```env
+NODE_ENV=development
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/locgiogiasi
+JWT_SECRET=your-secret-key
+JWT_EXPIRES_IN=7d
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+CORS_ORIGIN=http://localhost:3001
+```
+
+### Postman Examples:
+
+#### Login Admin:
+```bash
+curl -X POST http://localhost:3000/api/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "password123"
+  }'
+```
+
+#### Get Products:
+```bash
+curl -X GET "http://localhost:3000/api/products?page=1&limit=10&search=toyota"
+```
+
+#### Create Order:
+```bash
+curl -X POST http://localhost:3000/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": {
+      "name": "Nguyễn Văn A",
+      "email": "customer@example.com",
+      "phone": "0123456789",
+      "address": "123 Đường ABC",
+      "city": "Hồ Chí Minh"
+    },
+    "items": [
+      {
+        "productId": "64a7b8c9d1e2f3g4h5i6j7k8",
+        "quantity": 2
+      }
+    ]
+  }'
+```
+
+## Best Practices
+
+### API Design:
+- RESTful conventions
+- Consistent response format
+- Proper HTTP status codes
+- Meaningful error messages
+
+### Security:
+- JWT authentication
+- Input validation
+- File upload restrictions
+- CORS configuration
+
+### Performance:
+- Database indexing
+- Query optimization
+- Response compression
+- Caching (future)
+
+### Monitoring:
+- Request logging
+- Error tracking
+- Performance metrics
+- Health checks
