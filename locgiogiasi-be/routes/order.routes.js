@@ -18,7 +18,7 @@ const createOrderValidation = [
 ];
 
 const updateOrderStatusValidation = [
-  body('status').isIn(['pending', 'confirmed', 'processing', 'completed', 'cancelled']).withMessage('Valid status is required')
+  body('status').isIn(['contacted', 'not contacted']).withMessage('Valid status is required')
 ];
 
 // Public routes - create order from product list

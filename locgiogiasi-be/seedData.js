@@ -1844,6 +1844,537 @@ const defaultSettings = {
     logo: 'https://res.cloudinary.com/demo/image/upload/v1234567890/locgiogiasi-logo.png'
 };
 
+// Sample Orders Data
+const sampleOrders = [
+    {
+        customer: {
+            name: 'Nguyễn Văn Anh',
+            email: 'nguyenvananh@gmail.com',
+            phone: '0901234567',
+            address: '123 Đường Lê Lợi',
+            city: 'TP.HCM',
+            district: 'Quận 1',
+            ward: 'Phường Bến Nghé'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 2, price: 350000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng muốn giao hàng buổi chiều',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Trần Thị Bình',
+            email: 'tranthibinh@gmail.com',
+            phone: '0987654321',
+            address: '456 Đường Nguyễn Huệ',
+            city: 'TP.HCM',
+            district: 'Quận 3',
+            ward: 'Phường Võ Thị Sáu'
+        },
+        items: [
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 },
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 25) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Lê Hoàng Cường',
+            email: 'lehoangcuong@yahoo.com',
+            phone: '0912345678',
+            address: '789 Đường Pasteur',
+            city: 'TP.HCM',
+            district: 'Quận 1',
+            ward: 'Phường Nguyễn Thái Bình'
+        },
+        items: [
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng yêu cầu kiểm tra kỹ sản phẩm',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 20) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Phạm Thị Diệu',
+            email: 'phamthidieu@hotmail.com',
+            phone: '0923456789',
+            address: '321 Đường Trần Hưng Đạo',
+            city: 'Hà Nội',
+            district: 'Hoàn Kiếm',
+            ward: 'Phường Tràng Tiền'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 2, price: 420000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 18) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Võ Minh Đức',
+            email: 'vominhduc@gmail.com',
+            phone: '0934567890',
+            address: '654 Đường Cách Mạng Tháng 8',
+            city: 'TP.HCM',
+            district: 'Quận 10',
+            ward: 'Phường 6'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 1, price: 350000 },
+            { productCode: 'HON-CIV-002', quantity: 2, price: 280000 }
+        ],
+        status: 'contacted',
+        notes: 'Giao hàng tận nơi',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 15) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Hoàng Thị Hoa',
+            email: 'hoangthihoa@gmail.com',
+            phone: '0945678901',
+            address: '987 Đường Điện Biên Phủ',
+            city: 'TP.HCM',
+            district: 'Bình Thạnh',
+            ward: 'Phường 15'
+        },
+        items: [
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 12) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Đặng Văn Giang',
+            email: 'dangvangiang@outlook.com',
+            phone: '0956789012',
+            address: '147 Đường Võ Văn Tần',
+            city: 'TP.HCM',
+            district: 'Quận 3',
+            ward: 'Phường 6'
+        },
+        items: [
+            { productCode: 'FOR-FOC-004', quantity: 3, price: 380000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng có garage riêng',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Bùi Thị Kim',
+            email: 'buithikim@yahoo.com',
+            phone: '0967890123',
+            address: '258 Đường Hai Bà Trưng',
+            city: 'Hà Nội',
+            district: 'Hai Bà Trưng',
+            ward: 'Phường Bạch Đằng'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 1, price: 420000 },
+            { productCode: 'TOY-CAM-001', quantity: 1, price: 350000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 8) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Lý Văn Long',
+            email: 'lyvanlong@gmail.com',
+            phone: '0978901234',
+            address: '369 Đường Nguyễn Thị Minh Khai',
+            city: 'TP.HCM',
+            district: 'Quận 1',
+            ward: 'Phường Đa Kao'
+        },
+        items: [
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng VIP',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 7) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Chu Thị Mai',
+            email: 'chuthimai@hotmail.com',
+            phone: '0989012345',
+            address: '741 Đường Lý Thường Kiệt',
+            city: 'TP.HCM',
+            district: 'Quận 11',
+            ward: 'Phường 7'
+        },
+        items: [
+            { productCode: 'HYU-ELA-003', quantity: 2, price: 450000 },
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 6) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Phan Văn Nam',
+            email: 'phanvannam@gmail.com',
+            phone: '0990123456',
+            address: '852 Đường Hoàng Văn Thụ',
+            city: 'TP.HCM',
+            district: 'Tân Bình',
+            ward: 'Phường 4'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 1, price: 420000 }
+        ],
+        status: 'contacted',
+        notes: 'Giao hàng trước 17h',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 5) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Đỗ Thị Oanh',
+            email: 'dothioanh@yahoo.com',
+            phone: '0901234568',
+            address: '963 Đường Xô Viết Nghệ Tĩnh',
+            city: 'TP.HCM',
+            district: 'Bình Thạnh',
+            ward: 'Phường 21'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 2, price: 350000 },
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 4) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Ngô Văn Phúc',
+            email: 'ngovanphuc@outlook.com',
+            phone: '0912345679',
+            address: '159 Đường Trường Chinh',
+            city: 'Hà Nội',
+            district: 'Đống Đa',
+            ward: 'Phường Láng Thượng'
+        },
+        items: [
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 }
+        ],
+        status: 'contacted',
+        notes: 'Thanh toán khi nhận hàng',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 3) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Vũ Thị Quỳnh',
+            email: 'vuthiquynh@gmail.com',
+            phone: '0923456780',
+            address: '753 Đường Nguyễn Kiệm',
+            city: 'TP.HCM',
+            district: 'Phú Nhuận',
+            ward: 'Phường 3'
+        },
+        items: [
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 },
+            { productCode: 'MAZ-CX5-005', quantity: 1, price: 420000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 2) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Lâm Văn Rồng',
+            email: 'lamvanrong@hotmail.com',
+            phone: '0934567891',
+            address: '486 Đường Phạm Văn Đồng',
+            city: 'TP.HCM',
+            district: 'Gò Vấp',
+            ward: 'Phường 11'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 1, price: 350000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng có kinh nghiệm sửa chữa',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 1) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Cao Thị Sương',
+            email: 'caothisuong@gmail.com',
+            phone: '0945678902',
+            address: '297 Đường Quang Trung',
+            city: 'TP.HCM',
+            district: 'Gò Vấp',
+            ward: 'Phường 10'
+        },
+        items: [
+            { productCode: 'HON-CIV-002', quantity: 2, price: 280000 },
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Đinh Văn Tuấn',
+            email: 'dinhvantuan@yahoo.com',
+            phone: '0956789013',
+            address: '618 Đường Lê Văn Việt',
+            city: 'TP.HCM',
+            district: 'Quận 9',
+            ward: 'Phường Hiệp Phú'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 3, price: 420000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng có nhiều xe',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 28) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Huỳnh Thị Uyên',
+            email: 'huynhthuyen@outlook.com',
+            phone: '0967890124',
+            address: '529 Đường Tô Ngọc Vân',
+            city: 'Hà Nội',
+            district: 'Tây Hồ',
+            ward: 'Phường Quảng An'
+        },
+        items: [
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 26) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Trịnh Văn Vinh',
+            email: 'trinhvanvinh@gmail.com',
+            phone: '0978901235',
+            address: '840 Đường Khánh Hội',
+            city: 'TP.HCM',
+            district: 'Quận 4',
+            ward: 'Phường 6'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 1, price: 350000 },
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 },
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 }
+        ],
+        status: 'contacted',
+        notes: 'Đơn hàng combo',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 24) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Mai Thị Xuân',
+            email: 'maithixuan@hotmail.com',
+            phone: '0989012346',
+            address: '175 Đường Nguyễn Văn Trỗi',
+            city: 'TP.HCM',
+            district: 'Phú Nhuận',
+            ward: 'Phường 8'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 2, price: 420000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 22) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Lưu Văn Yên',
+            email: 'luuvanyen@gmail.com',
+            phone: '0990123457',
+            address: '462 Đường Âu Cơ',
+            city: 'TP.HCM',
+            district: 'Tân Phú',
+            ward: 'Phường Tân Thành'
+        },
+        items: [
+            { productCode: 'HYU-ELA-003', quantity: 2, price: 450000 },
+            { productCode: 'TOY-CAM-001', quantity: 1, price: 350000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng thân thiết',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 20) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Phan Thị Ánh',
+            email: 'phanthianh@yahoo.com',
+            phone: '0901234569',
+            address: '693 Đường Hùng Vương',
+            city: 'Đà Nẵng',
+            district: 'Hải Châu',
+            ward: 'Phường Thạch Thang'
+        },
+        items: [
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 18) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Đoàn Văn Bình',
+            email: 'doanvanbinh@outlook.com',
+            phone: '0912345680',
+            address: '384 Đường Nguyễn Trãi',
+            city: 'TP.HCM',
+            district: 'Quận 5',
+            ward: 'Phường 7'
+        },
+        items: [
+            { productCode: 'HON-CIV-002', quantity: 3, price: 280000 }
+        ],
+        status: 'contacted',
+        notes: 'Garage có nhiều xe Honda',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 16) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Tôn Thị Cẩm',
+            email: 'tonthicam@gmail.com',
+            phone: '0923456781',
+            address: '517 Đường Tham Lương',
+            city: 'TP.HCM',
+            district: 'Quận 12',
+            ward: 'Phường Thạnh Lộc'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 1, price: 420000 },
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 14) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Lê Văn Đạt',
+            email: 'levandat@hotmail.com',
+            phone: '0934567892',
+            address: '628 Đường Phan Văn Hớn',
+            city: 'TP.HCM',
+            district: 'Quận 12',
+            ward: 'Phường Tân Thới Nhất'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 2, price: 350000 },
+            { productCode: 'FOR-FOC-004', quantity: 2, price: 380000 }
+        ],
+        status: 'contacted',
+        notes: 'Đơn hàng số lượng lớn',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 12) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Vương Thị Ế',
+            email: 'vuongthie@yahoo.com',
+            phone: '0945678903',
+            address: '751 Đường Kinh Dương Vương',
+            city: 'TP.HCM',
+            district: 'Quận 6',
+            ward: 'Phường 12'
+        },
+        items: [
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Hồ Văn Phong',
+            email: 'hovanphong@gmail.com',
+            phone: '0956789014',
+            address: '364 Đường Tân Sơn Nhì',
+            city: 'TP.HCM',
+            district: 'Tân Phú',
+            ward: 'Phường Tân Sơn Nhì'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 1, price: 420000 },
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 }
+        ],
+        status: 'contacted',
+        notes: 'Khách hàng có yêu cầu đặc biệt về bao bì',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 8) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Trương Thị Giang',
+            email: 'truongthigiang@outlook.com',
+            phone: '0967890125',
+            address: '295 Đường Bình Long',
+            city: 'TP.HCM',
+            district: 'Tân Phú',
+            ward: 'Phường Phú Thạnh'
+        },
+        items: [
+            { productCode: 'TOY-CAM-001', quantity: 1, price: 350000 },
+            { productCode: 'HYU-ELA-003', quantity: 1, price: 450000 },
+            { productCode: 'FOR-FOC-004', quantity: 1, price: 380000 },
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 6) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Nguyễn Văn Hải',
+            email: 'nguyenvanhai@hotmail.com',
+            phone: '0978901236',
+            address: '582 Đường Lạc Long Quân',
+            city: 'TP.HCM',
+            district: 'Quận 11',
+            ward: 'Phường 1'
+        },
+        items: [
+            { productCode: 'MAZ-CX5-005', quantity: 2, price: 420000 }
+        ],
+        status: 'contacted',
+        notes: 'Giao hàng cuối tuần',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 4) * 24 * 60 * 60 * 1000)
+    },
+    {
+        customer: {
+            name: 'Đặng Thị Lan',
+            email: 'dangthilan@gmail.com',
+            phone: '0989012347',
+            address: '419 Đường Minh Phụng',
+            city: 'TP.HCM',
+            district: 'Quận 11',
+            ward: 'Phường 9'
+        },
+        items: [
+            { productCode: 'HON-CIV-002', quantity: 1, price: 280000 },
+            { productCode: 'TOY-CAM-001', quantity: 3, price: 350000 }
+        ],
+        status: 'not contacted',
+        notes: '',
+        orderDate: new Date(Date.now() - Math.floor(Math.random() * 2) * 24 * 60 * 60 * 1000)
+    }
+];
+
 // Clear all data function
 async function clearAllData() {
     try {
@@ -1957,6 +2488,57 @@ async function seedBlogs() {
     }
 }
 
+async function seedOrders() {
+    try {
+        console.log('📦 Seeding orders...');
+        
+        let createdCount = 0;
+        for (const orderData of sampleOrders) {
+            // Resolve product references by product code
+            const orderItems = [];
+            
+            for (const item of orderData.items) {
+                const product = await Product.findOne({ code: item.productCode });
+                if (product) {
+                    orderItems.push({
+                        product: product._id,
+                        quantity: item.quantity,
+                        price: item.price
+                    });
+                } else {
+                    console.log(`⚠️  Product not found with code: ${item.productCode}`);
+                }
+            }
+            
+            if (orderItems.length > 0) {
+                // Generate unique order number manually to avoid pre-save hook issues
+                const date = orderData.orderDate || new Date();
+                const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
+                const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+                const orderNumber = `ORD-${dateString}-${random}`;
+                
+                const order = new Order({
+                    orderNumber: orderNumber,
+                    customer: orderData.customer,
+                    items: orderItems,
+                    status: orderData.status,
+                    notes: orderData.notes,
+                    orderDate: orderData.orderDate
+                });
+                
+                await order.save();
+                createdCount++;
+                console.log(`  ✅ Created order: ${order.orderNumber} - ${orderData.customer.name}`);
+            }
+        }
+        
+        console.log(`✅ Created ${createdCount} orders`);
+    } catch (error) {
+        console.error('❌ Error seeding orders:', error);
+        throw error;
+    }
+}
+
 async function seedSettings() {
     try {
         console.log('⚙️  Seeding settings...');
@@ -1979,9 +2561,10 @@ async function seedAll() {
         // Clear existing data
         await clearAllData();
         
-        // Seed in order (brands first, then products)
+        // Seed in order (brands first, then products, then orders)
         await seedBrands();
         await seedProducts();
+        await seedOrders();
         await seedBlogs();
         await seedSettings();
         
@@ -2043,6 +2626,20 @@ async function seedBlogsOnly() {
     }
 }
 
+async function seedOrdersOnly() {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/locgiogiasi');
+        console.log('✓ Connected to MongoDB');
+        await seedOrders();
+        console.log('🎉 Orders seeding completed!');
+    } catch (error) {
+        console.error('❌ Error:', error);
+    } finally {
+        await mongoose.connection.close();
+        console.log('✓ Database connection closed');
+    }
+}
+
 // Run seeding if this file is executed directly
 if (require.main === module) {
     const args = process.argv.slice(2);
@@ -2053,6 +2650,8 @@ if (require.main === module) {
         seedProductsOnly();
     } else if (args.includes('--blogs')) {
         seedBlogsOnly();
+    } else if (args.includes('--orders')) {
+        seedOrdersOnly();
     } else {
         seedAll();
     }
@@ -2064,6 +2663,7 @@ module.exports = {
     seedBrands,
     seedProducts,
     seedBlogs,
+    seedOrders,
     seedBlogsOnly,
     seedSettings,
     sampleBrands,
