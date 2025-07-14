@@ -155,13 +155,24 @@ const connectDatabase = async () => {
 ```
 
 **Virtual Fields:**
-- `totalAmount`: Tổng giá trị đơn hàng
-- `totalItems`: Tổng số lượng sản phẩm
+- `totalAmount`: Tổng giá trị đơn hàng (computed từ items)
+- `totalItems`: Tổng số lượng sản phẩm (computed từ items)
 
 **Tính năng:**
-- Tự động tạo mã đơn hàng unique (format: `ORD-YYYYMMDD-XXXX`)
-- Virtual fields được serialize trong JSON
-- Tự động cập nhật `updatedAt`
+- **Auto Order Number**: Tự động tạo mã đơn hàng unique với format `ORD-YYYYMMDD-XXXX`
+- **Duplicate Prevention**: Retry logic để tránh trùng lặp orderNumber  
+- **Virtual Fields**: Được serialize trong JSON response
+- **Auto Timestamps**: Tự động cập nhật `updatedAt` khi save
+- **Email Integration**: Tự động gửi email xác nhận khi tạo đơn hàng mới
+
+**Order Number Generation Logic:**
+```javascript
+// Format: ORD-YYYYMMDD-XXXX
+// Ví dụ: ORD-20240712-1234
+const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
+const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+orderNumber = `ORD-${dateString}-${random}`;
+```
 
 ### 5. Blog Model (`models/blog.model.js`)
 
@@ -186,17 +197,27 @@ const connectDatabase = async () => {
 ```
 
 **Index:**
-- Text search: `title`, `content`
-- Compound: `category + status`
+- Text search: `title`, `content` (full-text search)
+- Compound: `category + status` (efficient filtering)
 
 **Tính năng:**
-- Tự động tạo slug từ title
-- Hỗ trợ tìm kiếm full-text
-- Quản lý trạng thái publish/hidden
+- **Auto Slug Generation**: Tự động tạo slug từ title
+  ```javascript
+  slug = title.toLowerCase()
+    .replace(/[^a-z0-9 -]/g, '')  // Remove special chars
+    .replace(/\s+/g, '-')         // Replace spaces with hyphens
+    .replace(/-+/g, '-')          // Replace multiple hyphens
+    .trim('-');                   // Remove leading/trailing hyphens
+  ```
+- **Full-text Search**: Hỗ trợ tìm kiếm trong title và content
+- **Status Management**: Quản lý trạng thái publish/hidden
+- **Featured Posts**: Đánh dấu bài viết nổi bật
+- **Auto Timestamps**: Tự động cập nhật `updatedAt`
+- **Tag System**: Hỗ trợ nhiều tag cho mỗi bài viết
 
 ### 6. Contact Model (`models/contact.model.js`)
 
-**Mục đích:** Lưu trữ thông tin liên hệ (hiện tại chỉ gửi email)
+**Mục đích:** Lưu trữ thông tin liên hệ
 
 **Schema:**
 ```javascript
@@ -210,7 +231,10 @@ const connectDatabase = async () => {
 }
 ```
 
-**Lưu ý:** Model này được định nghĩa nhưng hiện tại hệ thống chỉ gửi email mà không lưu vào database.
+**Lưu ý quan trọng:** 
+- Model này được định nghĩa nhưng **hiện tại hệ thống KHÔNG lưu thông tin liên hệ vào database**
+- Contact form chỉ gửi email thông báo đến admin qua nodemailer
+- Nếu muốn lưu trữ liên hệ vào DB, cần modify controller để save vào collection
 
 ### 7. Settings Model (`models/settings.model.js`)
 
@@ -314,14 +338,64 @@ mongorestore --uri="mongodb://localhost:27017/locgiogiasi" /backup/20241201
 
 ### Required Environment Variables:
 ```env
+# Database
 MONGODB_URI=mongodb://localhost:27017/locgiogiasi
 DB_NAME=locgiogiasi
+
+# JWT Authentication  
+JWT_SECRET=your-secret-key-here
+JWT_EXPIRES_IN=7d
+
+# Cloudinary (File Upload)
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Email (Nodemailer)
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-app-password
+ADMIN_EMAIL=admin@locgiogiasi.com  # Optional, defaults to EMAIL_USER
+
+# Server
+PORT=3000
+NODE_ENV=development
+CORS_ORIGIN=http://localhost:3001  # Frontend URL
 ```
 
 ### Development vs Production:
-- **Development:** Local MongoDB instance
-- **Production:** MongoDB Atlas hoặc dedicated server
-- **Connection Pooling:** Mongoose default configuration
+
+#### Development:
+- **Database:** Local MongoDB instance
+- **File Storage:** Cloudinary (same as production)
+- **Email:** Gmail SMTP with app password
+- **CORS:** Specific frontend URL allowed
+
+#### Production:
+- **Database:** MongoDB Atlas hoặc dedicated MongoDB server
+- **File Storage:** Cloudinary production account
+- **Email:** Production email service
+- **CORS:** Production frontend domain
+- **Security:** Strong JWT secret, environment-specific configs
+
+### Default Data Initialization:
+
+#### createDefaultAdmin()
+- Tự động tạo admin mặc định nếu collection admin trống
+- Username: từ biến môi trường hoặc 'admin' default
+- Password: từ biến môi trường hoặc 'admin123' default
+
+#### createUploadsDirectory()
+- Tạo thư mục `/uploads/` và các subdirectory cần thiết
+- `/uploads/temp/` cho temporary files
+- `/uploads/avatars/`, `/uploads/products/`, `/uploads/blogs/`
+
+### Connection Pooling:
+```javascript
+// Mongoose default configuration đã tối ưu
+useNewUrlParser: true,
+useUnifiedTopology: true
+// Mongoose tự động quản lý connection pool
+```
 
 ## Monitoring và Performance
 
@@ -356,3 +430,85 @@ DB_NAME=locgiogiasi
    - Auto-generated timestamps
    - Soft delete patterns (isActive fields)
    - Migration scripts
+
+## Middleware và Validation
+
+### Authentication Middleware (`middleware/auth.middleware.js`)
+
+**Mục đích:** Xác thực JWT token cho các protected routes
+
+**Sử dụng:**
+```javascript
+router.get('/protected-route', authMiddleware, controller.method);
+```
+
+**Flow:**
+1. Kiểm tra `Authorization` header với format `Bearer <token>`
+2. Verify JWT token với secret key
+3. Attach admin info vào `req.user`
+4. Cho phép truy cập hoặc trả về 401 Unauthorized
+
+### Order Validation Middleware (`middleware/order.middleware.js`)
+
+#### validateCustomerInfo
+**Mục đích:** Validate thông tin khách hàng trong order
+
+**Validation rules:**
+- Các field bắt buộc: `name`, `email`, `phone`, `address`, `city`
+- Email format validation
+- Phone number format validation (basic)
+
+#### validateOrderItems  
+**Mục đích:** Validate và enrich thông tin items trong order
+
+**Process:**
+1. Kiểm tra items array không rỗng
+2. Validate từng item có `productId` và `quantity`
+3. Lookup product từ database
+4. Kiểm tra product availability (`isActive: true`)
+5. Attach product price vào validated items
+6. Set `req.validatedItems` cho controller sử dụng
+
+### Upload Middleware (`middleware/upload.middleware.js`)
+
+#### uploadMultiple
+**Mục đích:** Upload multiple files cho products
+
+**Configuration:**
+- Max files: 10
+- Max file size: 10MB per file
+- Allowed types: JPG, JPEG, PNG, WebP
+- Temp storage: `/uploads/temp/`
+
+#### uploadSingle
+**Mục đích:** Upload single file cho blogs
+
+#### handleUploadError & cleanupTempFiles
+**Mục đích:** Error handling và cleanup temporary files
+
+### Express Validator Integration
+
+**Tất cả routes đều sử dụng express-validator để validation:**
+
+#### Product Validation:
+```javascript
+body('name').notEmpty().withMessage('Tên sản phẩm là bắt buộc')
+body('code').notEmpty().withMessage('Mã lọc là bắt buộc')
+body('brand').isMongoId().withMessage('Brand ID không hợp lệ')
+body('price').isFloat({ min: 0 }).withMessage('Giá bán phải là số dương')
+body('compatibleModels').custom(validateCompatibleModels)
+```
+
+#### Blog Validation:
+```javascript
+body('title').notEmpty().withMessage('Blog title is required')
+body('content').notEmpty().withMessage('Blog content is required')
+body('excerpt').isLength({ max: 500 }).withMessage('Excerpt must be less than 500 characters')
+```
+
+#### Admin Validation:
+```javascript
+body('username').isLength({ min: 3, max: 50 })
+body('email').isEmail()
+body('password').isLength({ min: 6 })
+```

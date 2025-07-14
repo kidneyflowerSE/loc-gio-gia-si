@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // Lấy tất cả sản phẩm
 const getAllProducts = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search, brand, minPrice, maxPrice, year, carModel } = req.query;
+        const { page = 1, limit = 12, search, brand, minPrice, maxPrice, year, carModel } = req.query;
         
         // Tạo filter object
         const filter = { isActive: true };
@@ -383,7 +383,7 @@ const searchByCode = async (req, res) => {
 const getProductsByBrand = async (req, res) => {
     try {
         const { brand } = req.params;
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 12 } = req.query;
         
         // Handle brand parameter - support both ObjectId and brand name
         let brandFilter;
@@ -439,7 +439,7 @@ const getProductsByBrand = async (req, res) => {
 const getProductsByCarModel = async (req, res) => {
     try {
         const { carModel } = req.params;
-        const { page = 1, limit = 10 } = req.query;
+        const { page = 1, limit = 12 } = req.query;
         
         const products = await Product.find({ 
                 'compatibleModels.carModelName': { $regex: carModel, $options: 'i' }, 
