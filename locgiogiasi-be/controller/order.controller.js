@@ -65,7 +65,14 @@ const createOrder = async (req, res) => {
     console.log('Order saved successfully:', order.orderNumber);
 
     // Populate product details for email
-    await order.populate('items.product', 'name brand model year price images');
+    await order.populate({
+      path: 'items.product',
+      select: 'name brand compatibleModels price images code',
+      populate: {
+        path: 'brand',
+        select: 'name'
+      }
+    });
 
     // Send email notification
     try {
@@ -115,9 +122,6 @@ const createOrder = async (req, res) => {
   }
 };
 
-// Legacy function name for backward compatibility (now same as createOrder)
-const createOrderFromCart = createOrder;
-
 // Send order notification email
 const sendOrderNotification = async (order) => {
   const customerEmail = {
@@ -144,7 +148,14 @@ const sendOrderNotification = async (order) => {
             ${order.items.map(item => `
               <div style="border-bottom: 1px solid #dee2e6; padding: 10px 0;">
                 <p><strong>${item.product.name}</strong></p>
-                <p>Hãng: ${item.product.brand} | Model: ${item.product.model} | Năm: ${item.product.year}</p>
+                <p>Mã sản phẩm: ${item.product.code}</p>
+                <p>Thương hiệu: ${item.product.brand ? item.product.brand.name : 'Chưa xác định'}</p>
+                ${item.product.compatibleModels && item.product.compatibleModels.length > 0 ? 
+                  `<p>Dòng xe tương thích: ${item.product.compatibleModels.map(model => 
+                    `${model.carModelName} (${model.years.join(', ')})`
+                  ).join(', ')}</p>` 
+                  : ''
+                }
                 <p>Giá: ${item.price.toLocaleString('vi-VN')} VND x ${item.quantity}</p>
                 <p>Tổng: ${(item.price * item.quantity).toLocaleString('vi-VN')} VND</p>
               </div>
@@ -188,7 +199,15 @@ const sendOrderNotification = async (order) => {
             ${order.items.map(item => `
               <div style="border-bottom: 1px solid #dee2e6; padding: 10px 0;">
                 <p><strong>${item.product.name}</strong></p>
+                <p>Mã sản phẩm: ${item.product.code}</p>
                 <p>ID: ${item.product._id}</p>
+                <p>Thương hiệu: ${item.product.brand ? item.product.brand.name : 'Chưa xác định'}</p>
+                ${item.product.compatibleModels && item.product.compatibleModels.length > 0 ? 
+                  `<p>Dòng xe tương thích: ${item.product.compatibleModels.map(model => 
+                    `${model.carModelName} (${model.years.join(', ')})`
+                  ).join(', ')}</p>` 
+                  : ''
+                }
                 <p>Giá: ${item.price.toLocaleString('vi-VN')} VND x ${item.quantity}</p>
                 <p>Tổng: ${(item.price * item.quantity).toLocaleString('vi-VN')} VND</p>
               </div>
@@ -220,7 +239,14 @@ const sendOrderNotification = async (order) => {
 const getOrderByNumber = async (req, res) => {
   try {
     const order = await Order.findOne({ orderNumber: req.params.orderNumber })
-      .populate('items.product', 'name brand model year images');
+      .populate({
+        path: 'items.product',
+        select: 'name brand compatibleModels images code price',
+        populate: {
+          path: 'brand',
+          select: 'name'
+        }
+      });
 
     if (!order) {
       return res.status(404).json({
@@ -280,7 +306,14 @@ const getOrders = async (req, res) => {
     }
 
     const orders = await Order.find(filter)
-      .populate('items.product', 'name brand model year')
+      .populate({
+        path: 'items.product',
+        select: 'name brand compatibleModels code',
+        populate: {
+          path: 'brand',
+          select: 'name'
+        }
+      })
       .sort({ orderDate: -1 })
       .skip(skip)
       .limit(limit);
@@ -312,7 +345,14 @@ const getOrders = async (req, res) => {
 const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate('items.product', 'name brand model year images specifications');
+      .populate({
+        path: 'items.product',
+        select: 'name brand compatibleModels images specifications code price',
+        populate: {
+          path: 'brand',
+          select: 'name'
+        }
+      });
 
     if (!order) {
       return res.status(404).json({
@@ -393,7 +433,6 @@ const deleteOrder = async (req, res) => {
 
 module.exports = {
   createOrder,
-  createOrderFromCart,
   getOrderByNumber,
   getOrders,
   getOrderById,

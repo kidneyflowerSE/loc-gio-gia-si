@@ -96,6 +96,7 @@ export default function AdminLogin() {
             className="mx-auto"
           />
         </Link>
+        <h1 className="text-center text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</h1>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Đăng nhập Quản trị</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Vui lòng đăng nhập để truy cập vào hệ thống quản trị
@@ -236,10 +237,6 @@ export default function AdminLogin() {
                 Quay lại trang chủ
               </Link>
             </div>
-          </div>
-          
-          <div className="mt-6 text-center text-xs text-gray-500">
-            <p>© 2023 Lọc Gió Giá Sỉ. Tất cả quyền được bảo lưu.</p>
           </div>
         </div>
       </div>

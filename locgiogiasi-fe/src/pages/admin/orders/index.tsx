@@ -56,12 +56,17 @@ interface Order {
   totalItems?: number;
 }
 
+const goToPage = (pageNumber: number, pagination:any, fetchCallBack:any) => {
+  if (pageNumber < 1 || pageNumber > pagination.pages || pageNumber === pagination.page) return;
+  fetchCallBack(pageNumber);
+};
+
 export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"Tất cả" | OrderStatusVn>("Tất cả");
   const [orders, setOrders] = useState<Order[]>([]);
-  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalOrders: 0, limit: 10 });
-  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0, limit: 10 });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const CACHE_KEY = 'admin_orders_default';
   const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
@@ -108,9 +113,13 @@ export default function OrdersPage() {
       const res = await api.get('/orders', { params });
       if (res.data.success) {
         setOrders(res.data.data.orders);
-        setPagination(res.data.data.pagination);
+        const { currentPage, totalPages, totalOrders, limit=10 } = res.data.data.pagination;
+        setPagination({ page: currentPage, pages: totalPages, total: totalOrders, limit });
         if(page===1 && statusFilter==='Tất cả' && searchTerm===''){
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), orders: res.data.data.orders, pagination: res.data.data.pagination}));
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+            ts: Date.now(), orders: res.data.data.orders, 
+            pagination: { page: currentPage, pages: totalPages, total: totalOrders, limit }
+          }));
         }
       }
     } catch (e: any) {
@@ -125,7 +134,7 @@ export default function OrdersPage() {
     if(statusFilter==='Tất cả' && searchTerm===''){
       if(cached){
         try{
-          const parsed = JSON.parse(cached);
+          const parsed = JSON.parse(cached) as {ts: number, orders: Order[], pagination: typeof pagination};
           if(Date.now()-parsed.ts < CACHE_TTL){
             setOrders(parsed.orders);
             setPagination(parsed.pagination);
@@ -147,6 +156,19 @@ export default function OrdersPage() {
     return () => clearTimeout(timeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTerm]);
+
+  // Client-side filter for instant UI feedback on search
+  const normalizedSearch = searchTerm.toLowerCase();
+  const displayedOrders = orders.filter(order => {
+    if (!searchTerm) return true;
+    return (
+      order.orderNumber.toLowerCase().includes(normalizedSearch) ||
+      order.customer.name.toLowerCase().includes(normalizedSearch) ||
+      order.customer.phone.includes(normalizedSearch) ||
+      (order.customer.address && order.customer.address.toLowerCase().includes(normalizedSearch)) ||
+      (order.customer.city && order.customer.city.toLowerCase().includes(normalizedSearch))
+    );
+  });
 
   if(loading && orders.length===0){
     return (
@@ -222,7 +244,7 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {orders.map((order) => (
+                {displayedOrders.map((order) => (
                   <tr key={order._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => window.location.href = `/admin/orders/${order._id}` }>
                     {/* Removed checkbox cell */}
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -247,7 +269,7 @@ export default function OrdersPage() {
                   </tr>
                 ))}
                 
-                {orders.length === 0 && (
+                {displayedOrders.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
                       Không tìm thấy đơn hàng nào
@@ -259,30 +281,71 @@ export default function OrdersPage() {
           </div>
           
           {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
-            <div className="flex items-center text-sm text-gray-500">
-              Hiển thị <span className="font-medium mx-1">{orders.length}</span> / <span className="font-medium mx-1">{pagination.totalOrders}</span> đơn hàng
+          {displayedOrders.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200">
+              <div className="flex items-center text-sm text-gray-500">
+                Hiển thị <span className="font-medium mx-1">{displayedOrders.length}</span> / <span className="font-medium mx-1">{pagination.total}</span> đơn hàng
+              </div>
+              
+              {pagination.pages > 1 && (
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => goToPage(pagination.page - 1, pagination, fetchOrders)}
+                    disabled={pagination.page === 1}
+                    className="px-3 py-1 border rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Trước
+                  </button>
+                  
+                  {((): React.ReactNode => {
+                    const buttons: React.ReactNode[] = [];
+                    const start = Math.max(1, pagination.page - 2);
+                    const end = Math.min(pagination.pages, pagination.page + 2);
+                    if (start > 1) {
+                      buttons.push(
+                        <button key={1} onClick={() => goToPage(1, pagination, fetchOrders)} className="px-3 py-1 border rounded-md text-sm border-gray-300 text-gray-700 hover:bg-gray-50">1</button>
+                      );
+                      if (start > 2) {
+                        buttons.push(<span key="start-ellipsis" className="px-1 text-gray-500">…</span>);
+                      }
+                    }
+                    for (let p = start; p <= end; p++) {
+                      buttons.push(
+                        <button
+                          key={p}
+                          onClick={() => goToPage(p, pagination, fetchOrders)}
+                          className={`px-3 py-1 border rounded-md text-sm ${
+                            pagination.page === p
+                              ? 'bg-primary-50 border-primary-500 text-primary-600 font-medium'
+                              : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    }
+                    if (end < pagination.pages) {
+                      if (end < pagination.pages - 1) {
+                        buttons.push(<span key="end-ellipsis" className="px-1 text-gray-500">…</span>);
+                      }
+                      buttons.push(
+                        <button key={pagination.pages} onClick={() => goToPage(pagination.pages, pagination, fetchOrders)} className="px-3 py-1 border rounded-md text-sm border-gray-300 text-gray-700 hover:bg-gray-50">{pagination.pages}</button>
+                      );
+                    }
+                    return buttons;
+                  })()}
+                  
+                  <button
+                    onClick={() => goToPage(pagination.page + 1, pagination, fetchOrders)}
+                    disabled={pagination.page === pagination.pages}
+                    className="px-3 py-1 border rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Sau
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex items-center space-x-2">
-              <button
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={pagination.currentPage === 1 || loading}
-                onClick={() => fetchOrders(pagination.currentPage - 1)}
-              >
-                Trước
-              </button>
-              <span className="px-3 py-1 text-sm">
-                {pagination.currentPage} / {pagination.totalPages}
-              </span>
-              <button
-                className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-                disabled={pagination.currentPage === pagination.totalPages || loading}
-                onClick={() => fetchOrders(pagination.currentPage + 1)}
-              >
-                Sau
-              </button>
-            </div>
-          </div>
+          ) }
           {error && <div className="text-center text-red-600 py-4">{error}</div>}
           {/* Removed overlay spinner to avoid unnecessary reload indication once list is shown */}
         </div>

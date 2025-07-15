@@ -1,162 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import ProductCard, { Product } from "@/components/ProductCard";
-import ProductSection from "@/components/ProductSection";
+import { Product } from "@/components/ProductCard";
 import Hero from "@/components/Hero";
 import SearchBar from "@/components/SearchBar";
+import ProductGrid from "@/components/ProductGrid";
+import api from "@/utils/api";
+// No direct axios import, use api instance
+import { GetServerSideProps } from "next";
 
-// Dummy products (will be replaced with real data later)
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Lọc Gió Động Cơ Toyota Camry Vios 2019",
-    slug: "loc-gio-dong-co-toyota-vios-2019",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 450000,
-    brand: "Toyota",
-    vehicle_type: "Sedan",
-    year: 2019,
-    product_code: "PRD001",
-  },
-  {
-    id: "2",
-    name: "Lọc Gió Động Cơ Honda City 2020",
-    slug: "loc-gio-dong-co-honda-city-2020",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 480000,
-    brand: "Honda",
-    vehicle_type: "Sedan",
-    year: 2020,
-    product_code: "PRD002",
-  },
-  {
-    id: "3",
-    name: "Lọc Gió Điều Hòa Ford Ranger 2021",
-    slug: "loc-gio-dieu-hoa-ford-ranger-2021",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 320000,
-    brand: "Ford",
-    vehicle_type: "Pickup",
-    year: 2021,
-    product_code: "PRD003",
-  },
-  {
-    id: "4",
-    name: "Lọc Gió Động Cơ Mazda 3 2022",
-    slug: "loc-gio-dong-co-mazda-3-2022",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 550000,
-    brand: "Mazda",
-    vehicle_type: "Sedan",
-    year: 2022,
-    product_code: "PRD004",
-  },
-  {
-    id: "5",
-    name: "Lọc Gió Điều Hòa Hyundai Accent 2018",
-    slug: "loc-gio-dieu-hoa-hyundai-accent-2018",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 300000,
-    brand: "Hyundai",
-    vehicle_type: "Sedan",
-    year: 2018,
-    product_code: "PRD005",
-  },
-  {
-    id: "6",
-    name: "Lọc Gió Động Cơ Mitsubishi Xpander 2021",
-    slug: "loc-gio-dong-co-mitsubishi-xpander-2021",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 520000,
-    brand: "Mitsubishi",
-    vehicle_type: "MPV",
-    year: 2021,
-    product_code: "PRD006",
-  },
-  {
-    id: "7",
-    name: "Lọc Gió Điều Hòa Kia Morning 2019",
-    slug: "loc-gio-dieu-hoa-kia-morning-2019",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 290000,
-    brand: "Kia",
-    vehicle_type: "Hatchback",
-    year: 2019,
-    product_code: "PRD007",
-  },
-  {
-    id: "8",
-    name: "Lọc Gió Động Cơ Ford Everest 2020",
-    slug: "loc-gio-dong-co-ford-everest-2020",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 600000,
-    brand: "Ford",
-    vehicle_type: "SUV",
-    year: 2020,
-    product_code: "PRD008",
-  },
-  {
-    id: "9",
-    name: "Lọc Gió Điều Hòa Toyota Fortuner 2021",
-    slug: "loc-gio-dieu-hoa-toyota-fortuner-2021",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 350000,
-    brand: "Toyota",
-    vehicle_type: "SUV",
-    year: 2021,
-    product_code: "PRD009",
-  },
-  {
-    id: "10",
-    name: "Lọc Gió Động Cơ Nissan Navara 2017",
-    slug: "loc-gio-dong-co-nissan-navara-2017",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 510000,
-    brand: "Nissan",
-    vehicle_type: "Pickup",
-    year: 2017,
-    product_code: "PRD010",
-  },
-];
 
-// Blog posts data
-const blogPosts = [
-  {
-    id: 1,
-    title: "Tầm quan trọng của việc thay lọc gió định kỳ",
-    slug: "tam-quan-trong-cua-viec-thay-loc-gio-dinh-ky",
-    excerpt: "Lọc gió là một phần quan trọng trong hệ thống động cơ ô tô. Việc thay thế định kỳ giúp động cơ hoạt động hiệu quả và kéo dài tuổi thọ xe.",
-    image: "/loc-gio-dieu-hoa.jpg",
-    date: "15/06/2023",
-    category: "Bảo dưỡng",
-    author: "Kỹ thuật viên Minh"
-  },
-  {
-    id: 2,
-    title: "Cách phân biệt lọc gió chính hãng và hàng giả",
-    slug: "cach-phan-biet-loc-gio-chinh-hang-va-hang-gia",
-    excerpt: "Thị trường phụ tùng ô tô có nhiều sản phẩm kém chất lượng. Bài viết này giúp bạn nhận biết lọc gió chính hãng để tránh mua phải hàng giả.",
-    image: "/loc-gio-dieu-hoa.jpg",
-    date: "22/07/2023",
-    category: "Kiến thức",
-    author: "Chuyên gia Hùng"
-  },
-  {
-    id: 3,
-    title: "5 dấu hiệu cho thấy lọc gió ô tô cần được thay thế",
-    slug: "5-dau-hieu-cho-thay-loc-gio-o-to-can-duoc-thay-the",
-    excerpt: "Lọc gió bẩn có thể gây ra nhiều vấn đề cho xe. Hãy tìm hiểu những dấu hiệu để biết khi nào cần thay lọc gió mới cho xe của bạn.",
-    image: "/loc-gio-dieu-hoa.jpg",
-    date: "05/08/2023",
-    category: "Bảo dưỡng",
-    author: "Kỹ sư Thành"
-  },
-];
+interface HomePageProps {
+  products: Product[];
+}
 
-const brands = ["Toyota", "Honda", "Ford", "Mazda", "Hyundai", "Kia"];
+export default function HomePage({ products }: HomePageProps) {
+  const [blogPosts, setBlogPosts] = useState<any[]>([]);
 
-export default function HomePage() {
+  // Fetch latest blogs (optional – prevents undefined errors)
+  useEffect(() => {
+    async function fetchBlogs() {
+      try {
+        const res = await api.get("/blogs", { params: { limit: 3 } });
+        if (res.data.success) {
+          const blogs = res.data.data.blogs || res.data.data;
+          setBlogPosts(
+            blogs.map((b: any) => ({
+              id: b._id,
+              title: b.title,
+              slug: b.slug,
+              image: b.featuredImage || "/hero.jpg",
+              category: b.category,
+              date: new Date(b.publishDate).toLocaleDateString("vi-VN"),
+              excerpt: b.content ? b.content.slice(0, 120) : "",
+              author: b.author || "Admin",
+            }))
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch blogs", error);
+      }
+    }
+    fetchBlogs();
+  }, []);
+
   return (
       <div className="space-y-12">
       {/* Hero Section */}
@@ -167,34 +54,10 @@ export default function HomePage() {
         <SearchBar />
       </section>
 
-      {/* Products by Category */}
-      <ProductSection 
-        title="Lọc gió Toyota" 
-        products={products} 
-        viewMoreLink="/products?brand=toyota"
-        viewMoreText="Xem thêm"
-      />
-      {/* <ProductSection 
-        title="Lọc gió Honda" 
-        products={products} 
-        viewMoreLink="/products?brand=honda"
-        viewMoreText="Xem thêm"
-      />
-      <ProductSection 
-        title="Lọc gió Ford" 
-        products={products} 
-        viewMoreLink="/products?brand=ford"
-        viewMoreText="Xem thêm"
-      />
-      <ProductSection
-        title="Lọc gió Mazda" 
-        products={products} 
-        viewMoreLink="/products?brand=mazda"
-        viewMoreText="Xem thêm"
-      /> */}
+      {/* Products Preview Section */}
+      <ProductGrid products={products} />
 
-      {/* Blog Posts */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center">
             <div className="bg-primary-600 w-1 h-6 mr-3"></div>
@@ -254,3 +117,25 @@ export default function HomePage() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  try {
+    const res = await api.get('/products', { params: { page: 1, limit: 16 } });
+    const products: Product[] = res.data.data.map((p: any) => ({
+      id: p._id,
+      name: p.name,
+      slug: p._id,
+      image:  "/loc-gio-dieu-hoa.jpg",
+      price: p.price,
+      brand: p.brand?.name || "",
+      vehicle_type: p.compatibleModels?.[0]?.carModelName || "",
+      year: parseInt(p.compatibleModels?.[0]?.years?.[0] || "0"),
+      product_code: p.code,
+    }));
+
+    return { props: { products } };
+  } catch (error) {
+    console.error("Failed to fetch products for homepage:", error);
+    return { props: { products: [] } };
+  }
+};

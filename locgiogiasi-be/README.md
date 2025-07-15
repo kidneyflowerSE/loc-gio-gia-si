@@ -1,69 +1,95 @@
 # LocGioGiaSi Backend API
 
-Backend API cho website bán locgiogiasi xe hơi.
+Backend API cho website chuyên bán lọc gió, lọc dầu và phụ tùng ô tô.
 
-## Tính năng chính
+## 🚀 Tính năng chính
 
-### 1. Quản lý sản phẩm locgiogiasi
-- CRUD sản phẩm locgiogiasi ô tô
-- Bộ lọc theo hãng xe, dòng xe, năm sản xuất, giá
-- Tìm kiếm theo tên, mã lọc
-- Upload hình ảnh sản phẩm lên Cloudinary
-- Quản lý tồn kho
+### 🔧 Quản lý sản phẩm
+- ✅ CRUD sản phẩm lọc gió, lọc dầu, lọc nhiên liệu
+- ✅ Quản lý thương hiệu xe và mẫu xe tương thích
+- ✅ Bộ lọc theo hãng xe, dòng xe, năm sản xuất, giá
+- ✅ Tìm kiếm theo tên, mã sản phẩm, mô tả
+- ✅ Upload multiple hình ảnh lên Cloudinary
+- ✅ Quản lý tồn kho và thông tin chi tiết sản phẩm
 
-### 2. Quản lý blog
-- CRUD blog posts
-- Phân loại blog theo category
-- Tag hệ thống
-- Blog nổi bật
+### 📝 Quản lý blog & nội dung
+- ✅ CRUD bài viết và tin tức
+- ✅ Phân loại theo category và tags
+- ✅ Bài viết nổi bật (featured posts)
+- ✅ Auto-generate SEO friendly slugs
+- ✅ Rich text content support
 
-### 3. Quản lý đơn hàng
-- Tạo đơn hàng trực tiếp từ danh sách sản phẩm
-- Gửi email báo giá
-- Quản lý trạng thái đơn hàng
-- Thống kê đơn hàng
+### 🛒 Hệ thống đặt hàng
+- ✅ Giỏ hàng session-based (không cần đăng ký)
+- ✅ Tạo đơn hàng với thông tin khách hàng
+- ✅ Quản lý trạng thái đơn hàng
+- ✅ Gửi email thông báo
+- ✅ Thống kê đơn hàng theo thời gian
 
-### 4. Hệ thống quản trị
-- Đăng nhập admin
-- Phân quyền người dùng
-- Quản lý admin accounts
+### 👥 Hệ thống quản trị
+- ✅ Đăng nhập admin với JWT
+- ✅ Bảo mật password với bcrypt
+- ✅ Middleware xác thực và phân quyền
+- ✅ Quản lý tài khoản admin
 
-### 4. Liên hệ
-- Form liên hệ
-- Gửi email tự động
-- Quản lý tin nhắn liên hệ
+### 📧 Liên hệ & hỗ trợ
+- ✅ Form liên hệ từ khách hàng
+- ✅ Gửi email tự động
+- ✅ Quản lý tin nhắn liên hệ
+- ✅ Cấu hình thông tin cửa hàng
 
-### 5. Thống kê
-- Dashboard thống kê
-- Báo cáo sản phẩm
-- Báo cáo đơn hàng
-- Báo cáo blog
+### 📊 Thống kê & báo cáo
+- ✅ Dashboard tổng quan
+- ✅ Thống kê sản phẩm bán chạy
+- ✅ Báo cáo đơn hàng theo thời gian
+- ✅ Thống kê doanh thu
 
-## Cài đặt
+## 🛠️ Công nghệ sử dụng
+
+- **Backend**: Node.js + Express.js
+- **Database**: MongoDB với Mongoose ODM
+- **Authentication**: JWT (JSON Web Tokens)
+- **File Upload**: Cloudinary
+- **Email**: Nodemailer
+- **Security**: bcrypt, helmet, cors
+- **Validation**: express-validator
+- **Development**: nodemon, dotenv
+
+## ⚙️ Cài đặt
 
 ### Yêu cầu hệ thống
-- Node.js (>= 14.0.0)
-- MongoDB (>= 4.0.0)
+- Node.js (>= 16.0.0)
+- MongoDB (>= 5.0.0)
 - NPM hoặc Yarn
 
-### Cài đặt dependencies
+### 1. Clone repository
+```bash
+git clone <repository-url>
+cd locgiogiasi-be
+```
+
+### 2. Cài đặt dependencies
 ```bash
 npm install
 ```
 
-### Cấu hình môi trường
-1. Sao chép file `.env.example` thành `.env`
-2. Cập nhật các thông tin cấu hình:
+### 3. Cấu hình môi trường
+1. Sao chép file `.env.example` thành `.env`:
+```bash
+cp .env.example .env
+```
+
+2. Cập nhật các thông tin cấu hình trong file `.env`:
 
 ```env
 # Database
 MONGODB_URI=mongodb://localhost:27017/locgiogiasi
 
 # JWT
-JWT_SECRET=your-jwt-secret-key
+JWT_SECRET=your-super-secret-jwt-key-here
 JWT_EXPIRES_IN=7d
 
-# Email
+# Email Configuration
 EMAIL_SERVICE=gmail
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
@@ -71,48 +97,401 @@ ADMIN_EMAIL=admin@locgiogiasi.com
 
 # Server
 PORT=3000
+NODE_ENV=development
 
-# Cloudinary Configuration
+# Cloudinary Configuration (for image upload)
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+
+# Admin Default Account
+DEFAULT_ADMIN_USERNAME=admin
+DEFAULT_ADMIN_EMAIL=admin@locgiogiasi.com
+DEFAULT_ADMIN_PASSWORD=admin123456
 ```
 
-### Khởi chạy server
-```bash
-# Development
-npm run dev
-
-# Production
-npm start
-```
-
-### Khởi tạo dữ liệu mẫu (Seed Data)
-
-Hệ thống cung cấp script để khởi tạo dữ liệu mẫu:
-
+### 4. Khởi tạo database với dữ liệu mẫu
 ```bash
 # Khởi tạo tất cả dữ liệu mẫu (brands, products, blogs, settings)
 npm run seed
 
-# Khởi tạo chỉ brands
-npm run seed:brands
+# Hoặc khởi tạo từng loại riêng biệt:
+npm run seed:brands     # Chỉ thương hiệu xe
+npm run seed:products   # Chỉ sản phẩm
+npm run seed:blogs      # Chỉ bài viết
 
-# Khởi tạo chỉ products
-npm run seed:products
+# Xóa toàn bộ dữ liệu hiện tại
+npm run seed:clear
 ```
 
-### Migration (Di chuyển dữ liệu)
+### 5. Khởi chạy server
+```bash
+# Development mode (với nodemon)
+npm run dev
 
-Nếu bạn đang nâng cấp từ phiên bản cũ có giỏ hàng, hãy chạy script migration:
+# Production mode
+npm start
+```
+
+Server sẽ chạy tại: `http://localhost:3000`
+
+## 📁 Cấu trúc dự án
+
+```
+locgiogiasi-be/
+├── config/                 # Cấu hình hệ thống
+│   ├── cloudinary.js       # Cấu hình Cloudinary
+│   ├── database.js         # Kết nối MongoDB
+│   └── email.js            # Cấu hình email
+├── controller/             # Controllers xử lý logic
+│   ├── admin.controller.js
+│   ├── blog.controller.js
+│   ├── brand.controller.js
+│   ├── cart.controller.js
+│   ├── contact.controller.js
+│   ├── order.controller.js
+│   ├── product.controller.js
+│   ├── settings.controller.js
+│   └── statistics.controller.js
+├── docs/                   # Tài liệu
+│   ├── api-documentation.md
+│   └── database-schema.md
+├── middleware/             # Middleware functions
+│   ├── auth.middleware.js  # Xác thực JWT
+│   ├── cart.middleware.js  # Middleware giỏ hàng
+│   ├── error.middleware.js # Xử lý lỗi
+│   ├── order.middleware.js # Middleware đơn hàng
+│   └── upload.middleware.js # Upload files
+├── models/                 # Database models
+│   ├── admin.model.js
+│   ├── blog.model.js
+│   ├── brand.model.js
+│   ├── cart.model.js
+│   ├── contact.model.js
+│   ├── order.model.js
+│   ├── product.model.js
+│   └── settings.model.js
+├── routes/                 # API routes
+│   ├── admin.routes.js
+│   ├── blog.routes.js
+│   ├── brand.routes.js
+│   ├── cart.routes.js
+│   ├── contact.routes.js
+│   ├── order.routes.js
+│   ├── product.routes.js
+│   ├── settings.routes.js
+│   ├── statistics.routes.js
+│   └── index.js
+├── uploads/                # Upload directories
+│   ├── avatars/
+│   ├── blogs/
+│   ├── products/
+│   └── temp/
+├── utils/                  # Utility functions
+│   ├── createDefaultAdmin.js
+│   ├── createDirectories.js
+│   ├── createTempDirectory.js
+│   ├── helpers.js
+│   ├── scheduleCleanup.js
+│   └── validation.js
+├── .env.example            # Ví dụ cấu hình môi trường
+├── .gitignore
+├── index.js                # Entry point
+├── package.json
+├── README.md
+└── seedData.js             # Dữ liệu mẫu
+```
+
+## 🔌 API Endpoints
+
+### Public Endpoints
+- `GET /api/health` - Health check
+- `GET /api/products` - Danh sách sản phẩm
+- `GET /api/products/:id` - Chi tiết sản phẩm
+- `GET /api/brands` - Danh sách thương hiệu
+- `GET /api/blogs` - Danh sách bài viết
+- `GET /api/settings` - Cài đặt website
+- `POST /api/contacts` - Gửi liên hệ
+- `POST /api/orders` - Tạo đơn hàng
+
+### Admin Endpoints (Yêu cầu authentication)
+- `POST /api/admin/login` - Đăng nhập admin
+- `GET /api/admin/profile` - Thông tin admin
+- `GET /api/statistics/*` - Các API thống kê
+- All CRUD operations for: products, brands, blogs, orders, contacts, settings
+
+### Cart Endpoints
+- `GET /api/cart/:sessionId` - Xem giỏ hàng
+- `POST /api/cart/add` - Thêm sản phẩm
+- `PUT /api/cart/update` - Cập nhật số lượng
+- `DELETE /api/cart/remove` - Xóa sản phẩm
+- `DELETE /api/cart/clear/:sessionId` - Xóa giỏ hàng
+
+Chi tiết đầy đủ API: [📖 API Documentation](./docs/api-documentation.md)
+
+## 🗄️ Database Schema
+
+### Collections chính:
+- **admins**: Tài khoản quản trị
+- **brands**: Thương hiệu xe và mẫu xe
+- **products**: Sản phẩm (lọc gió, lọc dầu, etc.)
+- **orders**: Đơn hàng từ khách hàng
+- **carts**: Giỏ hàng session-based
+- **blogs**: Bài viết và tin tức
+- **contacts**: Liên hệ từ khách hàng
+- **settings**: Cấu hình website
+
+Chi tiết schema: [📊 Database Schema](./docs/database-schema.md)
+
+## 🧪 Scripts NPM
 
 ```bash
-# Xóa dữ liệu cart và cập nhật cấu trúc database
-npm run migrate:remove-cart
+# Development
+npm run dev              # Chạy server với nodemon
+npm run start            # Chạy server production
+
+# Database
+npm run seed             # Khởi tạo tất cả dữ liệu mẫu
+npm run seed:brands      # Chỉ thương hiệu
+npm run seed:products    # Chỉ sản phẩm  
+npm run seed:blogs       # Chỉ bài viết
+npm run seed:clear       # Xóa toàn bộ dữ liệu
+
+# Maintenance
+npm run create-admin     # Tạo tài khoản admin mặc định
+npm run cleanup          # Dọn dẹp files tạm
 ```
 
-**Script migration sẽ:**
-- Xóa toàn bộ dữ liệu cart từ database
+## 🚀 Deployment
+
+### 1. Chuẩn bị production
+```bash
+# Cập nhật biến môi trường
+NODE_ENV=production
+PORT=3000
+
+# Sử dụng MongoDB Atlas hoặc server riêng
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/locgiogiasi
+
+# Cấu hình Cloudinary production
+CLOUDINARY_CLOUD_NAME=production-cloud-name
+```
+
+### 2. Deploy lên VPS/Server
+```bash
+# Clone code
+git clone <repository-url>
+cd locgiogiasi-be
+
+# Cài đặt dependencies
+npm install --production
+
+# Khởi tạo dữ liệu
+npm run seed
+
+# Start với PM2
+npm install -g pm2
+pm2 start index.js --name "locgiogiasi-api"
+pm2 startup
+pm2 save
+```
+
+### 3. Nginx Configuration
+```nginx
+server {
+    listen 80;
+    server_name api.locgiogiasi.com;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+## 🔧 Maintenance
+
+### Backup Database
+```bash
+# Backup toàn bộ database
+mongodump --uri="mongodb://localhost:27017/locgiogiasi" --out=./backup/$(date +%Y%m%d)
+
+# Restore database
+mongorestore --uri="mongodb://localhost:27017/locgiogiasi" ./backup/20240115
+```
+
+### Cleanup Tasks
+```bash
+# Dọn dẹp files upload tạm
+npm run cleanup
+
+# Xóa cart sessions hết hạn (tự động chạy)
+# Xóa order logs cũ hơn 1 năm
+```
+
+### Logs & Monitoring
+```bash
+# Xem logs PM2
+pm2 logs locgiogiasi-api
+
+# Monitor performance
+pm2 monit
+```
+
+## 🐞 Troubleshooting
+
+### Lỗi thường gặp:
+
+#### 1. Không kết nối được MongoDB
+```bash
+# Kiểm tra MongoDB đang chạy
+mongosh --eval "db.runCommand({connectionStatus:1})"
+
+# Kiểm tra connection string
+echo $MONGODB_URI
+```
+
+#### 2. Lỗi upload hình ảnh
+```bash
+# Kiểm tra cấu hình Cloudinary
+curl -X GET "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/usage"
+```
+
+#### 3. Lỗi gửi email
+```bash
+# Kiểm tra email configuration
+npm run test:email
+```
+
+#### 4. Lỗi JWT token
+```bash
+# Kiểm tra JWT secret
+echo $JWT_SECRET
+```
+
+### Performance Issues:
+
+#### 1. Database slow queries
+```javascript
+// Enable MongoDB profiling
+db.setProfilingLevel(2, { slowms: 100 })
+
+// Xem slow queries
+db.system.profile.find().sort({ts: -1}).limit(5)
+```
+
+#### 2. Memory leaks
+```bash
+# Monitor memory usage
+pm2 show locgiogiasi-api
+```
+
+## 🔐 Security
+
+### Best Practices:
+- ✅ Passwords được hash với bcrypt
+- ✅ JWT tokens có thời gian hết hạn
+- ✅ Input validation với express-validator  
+- ✅ CORS configuration
+- ✅ Rate limiting trên sensitive endpoints
+- ✅ File upload security (type checking, size limits)
+- ✅ NoSQL injection prevention
+- ✅ XSS protection
+
+### Security Headers:
+```javascript
+// Tự động apply bởi helmet middleware
+Content-Security-Policy
+X-Content-Type-Options
+X-Frame-Options
+X-XSS-Protection
+```
+
+## 🧪 Testing
+
+### Manual Testing:
+```bash
+# Test API endpoints
+curl -X GET http://localhost:3000/api/health
+
+# Test authentication
+curl -X POST http://localhost:3000/api/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123456"}'
+```
+
+### Load Testing:
+```bash
+# Sử dụng Apache Bench
+ab -n 1000 -c 10 http://localhost:3000/api/products
+
+# Hoặc sử dụng wrk
+wrk -t12 -c400 -d30s http://localhost:3000/api/products
+```
+
+## 📝 Changelog
+
+### Version 2.0.0 (Current)
+- ✅ Cấu trúc lại models với validation tốt hơn
+- ✅ Cập nhật seedData với dữ liệu phong phú
+- ✅ Thêm middleware cập nhật timestamps
+- ✅ Tối ưu hóa indexes database
+- ✅ Cải thiện error handling
+- ✅ Thêm API documentation chi tiết
+- ✅ Thêm database schema documentation
+
+### Version 1.0.0 
+- ✅ Core API functionality
+- ✅ Admin authentication
+- ✅ Product, Brand, Order management
+- ✅ Blog và Contact system
+- ✅ File upload với Cloudinary
+- ✅ Email notifications
+
+## 🤝 Contributing
+
+### Setup Development:
+1. Fork repository
+2. Create feature branch: `git checkout -b feature/new-feature`
+3. Commit changes: `git commit -m 'Add new feature'`
+4. Push branch: `git push origin feature/new-feature`
+5. Submit Pull Request
+
+### Code Standards:
+- Sử dụng ES6+ syntax
+- Tuân thủ ESLint rules
+- Comment code cho logic phức tạp
+- Write descriptive commit messages
+- Update documentation
+
+## 📞 Support
+
+### Issues & Bugs:
+- Tạo issue trên GitHub repository
+- Cung cấp đầy đủ thông tin: OS, Node version, error logs
+
+### Feature Requests:
+- Mô tả chi tiết feature mong muốn
+- Giải thích use case và lợi ích
+
+### Contact:
+- Email: developer@locgiogiasi.com
+- GitHub Issues: [Repository Issues](./issues)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Made with ❤️ for LocGioGiaSi**
 - Drop collection `carts`
 - Loại bỏ reference đến cart trong orders
 - Cập nhật cấu trúc database phù hợp với quy trình mới
@@ -144,7 +523,7 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
 │ price: Number   │       │   quantity: Number │     │ featuredImage: String│
 │ description: String│     │   price: Number │       │ author: String  │
 │ specifications: Obj│     │   totalPrice: Number│   │ category: String│
-│ images: [String]│       │ ]               │       │ tags: [String]  │
+│ images: [String]│       │ ]               │       │ status: String  │
 │ featured: Boolean│      │ totalAmount: Number│    │ status: String  │
 │ status: String  │       │ status: String  │       │ featured: Boolean│
 │ createdAt: Date │       │ paymentMethod: String│  │ publishDate: Date│
@@ -189,8 +568,10 @@ Hệ thống sử dụng MongoDB với các collection chính sau:
   }],
   stock: Number,             // Số lượng tồn kho
   category: String,          // Danh mục (default: 'LocGioGiaSi')
-  specifications: Map,       // Thông số kỹ thuật
-  tags: [String],            // Tag cho SEO
+  origin: String,            // Xuất xứ
+  material: String,          // Chất liệu
+  dimensions: String,        // Kích thước
+  warranty: String,          // Thời gian bảo hành
   isActive: Boolean,         // Trạng thái kích hoạt
   createdAt: Date,
   updatedAt: Date

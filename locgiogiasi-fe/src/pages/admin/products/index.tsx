@@ -11,6 +11,11 @@ interface Product {
   stock: number;
   images: { url: string }[];
   tags: string[];
+  description?: string;
+  origin?: string;
+  material?: string;
+  dimensions?: string;
+  warranty?: string;
 }
 
 export default function ProductsPage() {
@@ -34,16 +39,25 @@ export default function ProductsPage() {
     brandId: '',
     price: '',
     description: '',
+    origin: '',
+    material: '',
+    dimensions: '',
+    warranty: '',
     stock: '',
     tags: '',
     compatibleModels: '',
-    specifications: '',
     images: [] as File[]
   });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
+
+  // Helper to navigate between pages
+  const goToPage = (pageNumber: number) => {
+    if (pageNumber < 1 || pageNumber > pagination.pages || pageNumber === pagination.page) return;
+    fetchProducts(pageNumber);
+  };
 
   const fetchProducts = async (page = 1) => {
     try {
@@ -89,14 +103,28 @@ export default function ProductsPage() {
     /* eslint-disable-next-line */
   },[]);
 
-  useEffect(()=>{
-    const t = setTimeout(()=>fetchProducts(1),500);
-    return ()=>clearTimeout(t);
-    // eslint-disable-next-line
-  },[searchTerm]);
+  // Hybrid search:
+  // 1. Immediately filter current page client-side for responsiveness.
+  // 2. After a short debounce, fetch from server so that searching spans all pages/products.
 
-  // Apply category filter client-side
-  const displayedProducts = products.filter(prod => categoryFilter==='Tất cả' || (prod.tags && prod.tags.includes(categoryFilter)) );
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      // Whenever searchTerm changes, restart list from page 1 using server filtering
+      fetchProducts(1);
+    }, 500);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Client-side filter on the already-fetched products so the UI updates instantly
+  const normalizedSearch = searchTerm.toLowerCase();
+  const displayedProducts = products
+    .filter(prod =>
+      !searchTerm ||
+      prod.name.toLowerCase().includes(normalizedSearch) ||
+      prod.code.toLowerCase().includes(normalizedSearch)
+    )
+    .filter(prod => categoryFilter === 'Tất cả' || (prod.tags && prod.tags.includes(categoryFilter)));
 
   // Fetch brands for dropdown
   useEffect(() => {
@@ -111,7 +139,7 @@ export default function ProductsPage() {
 
   const openCreateModal = () => {
     setEditProduct(null);
-    setCreateForm({name:'',code:'',brandId:'',price:'',description:'',stock:'',tags:'',compatibleModels:'',specifications:'',images:[]});
+    setCreateForm({name:'',code:'',brandId:'',price:'',description:'',origin:'',material:'',dimensions:'',warranty:'',stock:'',tags:'',compatibleModels:'',images:[]});
     setShowCreateModal(true);
   };
 
@@ -123,10 +151,14 @@ export default function ProductsPage() {
       brandId: (product as any).brand?._id || '',
       price: String(product.price || ''),
       description: (product as any).description || '',
+      origin: (product as any).origin || '',
+      material: (product as any).material || '',
+      dimensions: (product as any).dimensions || '',
+      warranty: (product as any).warranty || '',
       stock: String(product.stock || ''),
       tags: product.tags ? product.tags.join(', ') : '',
       compatibleModels: JSON.stringify((product as any).compatibleModels || []),
-      specifications: JSON.stringify((product as any).specifications || {}),
+      // specifications removed
       images: []
     });
     setShowCreateModal(true);
@@ -261,7 +293,7 @@ export default function ProductsPage() {
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-md text-black font-medium">{product.price.toLocaleString('vi-VN')}₫</span>
-                    <span className="text-sm bg-primary-700 font-medium p-2 rounded-md text-white">Kho: {product.stock}</span>
+                    <span className="text-sm bg-red-500 font-medium p-2 rounded-md text-white">Kho: {product.stock}</span>
                   </div>
                   <div className="flex justify-between items-center mt-auto">
                     <span className="text-xs px-2 py-1 bg-gray-100 rounded-full text-gray-600">{product.tags && product.tags.length > 0 ? product.tags[0] : 'Không rõ'}</span>
@@ -358,20 +390,80 @@ export default function ProductsPage() {
         {/* Pagination */}
         {displayedProducts.length > 0 && (
           <div className="flex items-center justify-between mt-6">
+            {/* Info */}
             <div className="flex items-center text-sm text-gray-500">
               Hiển thị <span className="font-medium mx-1">{displayedProducts.length}</span> / <span className="font-medium mx-1">{pagination.total}</span> sản phẩm
             </div>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50" disabled>
-                Trước
-              </button>
-              <button className="px-3 py-1 bg-primary-50 border border-primary-500 rounded-md text-sm font-medium text-primary-600">
-                1
-              </button>
-              <button className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
-                Sau
-              </button>
-            </div>
+
+            {/* Pagination controls */}
+            {pagination.pages > 1 && (
+              <div className="flex items-center space-x-2">
+                {/* Previous */}
+                <button
+                  onClick={() => goToPage(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                  className={`px-3 py-1 border rounded-md text-sm transition-colors ${
+                    pagination.page === 1
+                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Trước
+                </button>
+
+                {/* Page numbers – show current ±2 */}
+                {(() => {
+                  const buttons: React.ReactNode[] = [];
+                  const start = Math.max(1, pagination.page - 2);
+                  const end = Math.min(pagination.pages, pagination.page + 2);
+                  if (start > 1) {
+                    buttons.push(
+                      <button key={1} onClick={() => goToPage(1)} className={`px-3 py-1 border rounded-md text-sm ${pagination.page === 1 ? 'bg-primary-50 border-primary-500 text-primary-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>1</button>
+                    );
+                    if (start > 2) {
+                      buttons.push(<span key="start-ellipsis" className="px-1 text-gray-500">…</span>);
+                    }
+                  }
+                  for (let p = start; p <= end; p++) {
+                    buttons.push(
+                      <button
+                        key={p}
+                        onClick={() => goToPage(p)}
+                        className={`px-3 py-1 border rounded-md text-sm ${
+                          pagination.page === p
+                            ? 'bg-primary-50 border-primary-500 text-primary-600 font-medium'
+                            : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  }
+                  if (end < pagination.pages) {
+                    if (end < pagination.pages - 1) {
+                      buttons.push(<span key="end-ellipsis" className="px-1 text-gray-500">…</span>);
+                    }
+                    buttons.push(
+                      <button key={pagination.pages} onClick={() => goToPage(pagination.pages)} className={`px-3 py-1 border rounded-md text-sm ${pagination.page === pagination.pages ? 'bg-primary-50 border-primary-500 text-primary-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}>{pagination.pages}</button>
+                    );
+                  }
+                  return buttons;
+                })()}
+
+                {/* Next */}
+                <button
+                  onClick={() => goToPage(pagination.page + 1)}
+                  disabled={pagination.page === pagination.pages}
+                  className={`px-3 py-1 border rounded-md text-sm transition-colors ${
+                    pagination.page === pagination.pages
+                      ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  Sau
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -395,9 +487,17 @@ export default function ProductsPage() {
                 <input type="number" placeholder="Số lượng kho" className="w-full border rounded-lg px-3 py-2" value={createForm.stock} onChange={e=>setCreateForm({...createForm,stock:e.target.value})} />
               </div>
               <textarea placeholder="Mô tả" className="w-full border rounded-lg px-3 py-2" rows={3} value={createForm.description} onChange={e=>setCreateForm({...createForm,description:e.target.value})} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input type="text" placeholder="Xuất xứ" className="w-full border rounded-lg px-3 py-2" value={createForm.origin} onChange={e=>setCreateForm({...createForm,origin:e.target.value})} />
+                <input type="text" placeholder="Chất liệu" className="w-full border rounded-lg px-3 py-2" value={createForm.material} onChange={e=>setCreateForm({...createForm,material:e.target.value})} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input type="text" placeholder="Kích thước" className="w-full border rounded-lg px-3 py-2" value={createForm.dimensions} onChange={e=>setCreateForm({...createForm,dimensions:e.target.value})} />
+                <input type="text" placeholder="Bảo hành" className="w-full border rounded-lg px-3 py-2" value={createForm.warranty} onChange={e=>setCreateForm({...createForm,warranty:e.target.value})} />
+              </div>
               <input type="text" placeholder="Tags (phân tách bằng dấu phẩy)" className="w-full border rounded-lg px-3 py-2" value={createForm.tags} onChange={e=>setCreateForm({...createForm,tags:e.target.value})} />
               <textarea placeholder="compatibleModels (JSON)" className="w-full border rounded-lg px-3 py-2" rows={3} value={createForm.compatibleModels} onChange={e=>setCreateForm({...createForm,compatibleModels:e.target.value})} />
-              <textarea placeholder="specifications (JSON)" className="w-full border rounded-lg px-3 py-2" rows={3} value={createForm.specifications} onChange={e=>setCreateForm({...createForm,specifications:e.target.value})} />
+              {/* specifications field removed */}
               <input type="file" multiple accept="image/*" className="w-full" onChange={e=> setCreateForm({...createForm, images: e.target.files ? Array.from(e.target.files) : [] })} />
             </div>
             <div className="mt-6 flex justify-end gap-3">
@@ -412,8 +512,11 @@ export default function ProductsPage() {
                   if(createForm.compatibleModels) fd.append('compatibleModels', createForm.compatibleModels);
                   if(createForm.price) fd.append('price', createForm.price);
                   if(createForm.description) fd.append('description', createForm.description);
+                  if(createForm.origin) fd.append('origin', createForm.origin);
+                  if(createForm.material) fd.append('material', createForm.material);
+                  if(createForm.dimensions) fd.append('dimensions', createForm.dimensions);
+                  if(createForm.warranty) fd.append('warranty', createForm.warranty);
                   if(createForm.stock) fd.append('stock', createForm.stock);
-                  if(createForm.specifications) fd.append('specifications', createForm.specifications);
                   if(createForm.tags) fd.append('tags', JSON.stringify(createForm.tags.split(',').map(t=>t.trim()).filter(Boolean)));
                   createForm.images.forEach(file=> fd.append('images', file));
 
@@ -424,7 +527,7 @@ export default function ProductsPage() {
                   }
                   setShowCreateModal(false);
                   setEditProduct(null);
-                  setCreateForm({name:'',code:'',brandId:'',price:'',description:'',stock:'',tags:'',compatibleModels:'',specifications:'',images:[]});
+                  setCreateForm({name:'',code:'',brandId:'',price:'',description:'',origin:'',material:'',dimensions:'',warranty:'',stock:'',tags:'',compatibleModels:'',images:[]});
                   fetchProducts(1);
                 } catch(e:any){ alert(e.response?.data?.message || 'Lỗi lưu sản phẩm'); }
                 finally { setCreateLoading(false); }

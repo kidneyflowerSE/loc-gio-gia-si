@@ -2,6 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart, Zap } from "lucide-react";
 import { useState } from "react";
+import BuyNowModal from "@/components/BuyNowModal";
+import { useCart } from "@/context/CartContext";
+import toast from "react-hot-toast";
 
 export interface Product {
   id: string;
@@ -21,7 +24,23 @@ interface Props {
 
 export default function ProductCard({ product }: Props) {
   const [imageLoading, setImageLoading] = useState(true);
+  const [showBuyNow, setShowBuyNow] = useState(false);
   const fullProductName = `${product.name} ${product.vehicle_type} ${product.year} (${product.product_code})`;
+
+  const { addItem } = useCart();
+
+  const handleAddToCart = () => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      image: product.image,
+      price: product.price,
+      brand: product.brand,
+      year: product.year,
+    });
+    toast.success("Đã thêm vào giỏ hàng");
+  };
 
   return (
     <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-secondary-200 bg-white transition-all duration-300 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-1">
@@ -73,6 +92,7 @@ export default function ProductCard({ product }: Props) {
         
         <div className="mt-auto grid grid-cols-1 lg:grid-cols-2 gap-2">
           <button 
+            onClick={handleAddToCart}
             className="group/cart inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary-500 bg-white px-3 py-3 text-xs font-medium text-primary-600 transition-all hover:bg-primary-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             aria-label="Thêm vào giỏ hàng"
           >
@@ -82,12 +102,16 @@ export default function ProductCard({ product }: Props) {
           <button 
             className="group/buy hidden lg:inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-3 text-xs font-medium text-white shadow-md shadow-primary-500/20 transition-all hover:bg-primary-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             aria-label="Mua ngay"
+            onClick={() => setShowBuyNow(true)}
           >
             {/* <Zap className="h-3.5 w-3.5 transition-transform group-hover/buy:scale-110" /> */}
             <span>Mua ngay</span>
           </button>
         </div>
       </div>
+      {showBuyNow && (
+        <BuyNowModal product={product} open={showBuyNow} onClose={() => setShowBuyNow(false)} />
+      )}
     </div>
   );
 } 

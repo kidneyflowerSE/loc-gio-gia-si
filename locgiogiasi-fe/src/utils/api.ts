@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost/api',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || (typeof window !== 'undefined' ? '/api' : 'http://localhost:3001/api'),
 });
 
 // Attach token automatically

@@ -31,30 +31,40 @@ const navItems: NavItem[] = [
 export default function Sidebar() {
   const router = useRouter();
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [adminName, setAdminName] = useState<string>(()=>{
-    if(typeof window!== 'undefined'){
-      return localStorage.getItem('admin_name') || 'Admin';
-    }
-    return 'Admin';
-  });
+  // Initialize with a static value so that the content rendered on the server
+  // is identical to the first paint on the client. We then update the value
+  // after the component has mounted on the client side.
+  const [adminName, setAdminName] = useState<string>('admin');
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
-  // Fetch admin profile once
+  // Read from localStorage and (if needed) fetch fresh profile information once
+  // the component has mounted on the client. This prevents mismatches between
+  // server-rendered and client-rendered HTML during hydration.
   useEffect(() => {
-    if(adminName!== 'Admin') return; // already cached
-    const fetchProfile = async () => {
-      try {
-        const res = await api.get('/admin/profile');
-        if (res.data.success) {
-          const name = res.data.data.username || res.data.data.email || 'Admin';
-          setAdminName(name);
-          localStorage.setItem('admin_name', name);
+    // Ensure this code only runs in the browser
+    if (typeof window === 'undefined') return;
+
+    // 1. Try to read the cached admin name from localStorage first
+    const cachedName = localStorage.getItem('admin_name');
+    if (cachedName) {
+      setAdminName(cachedName);
+    }
+
+    // 2. Fetch admin profile if we do not have a cached name yet
+    if (!cachedName) {
+      (async () => {
+        try {
+          const res = await api.get('/admin/profile');
+          if (res.data.success) {
+            const name = res.data.data.username || res.data.data.email || 'Admin';
+            setAdminName(name);
+            localStorage.setItem('admin_name', name);
+          }
+        } catch (e) {
+          // Silently ignore any error – we keep the default name
         }
-      } catch (e) {
-        // ignore
-      }
-    };
-    fetchProfile();
+      })();
+    }
   }, []);
   
   // Check if the current route matches a nav item
@@ -72,8 +82,10 @@ export default function Sidebar() {
     <aside className="h-screen sticky top-0 w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-200">
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</h1>
+
         <Link href="/admin" className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-lg bg-primary-600 flex items-center justify-center overflow-hidden">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
             <Image src="/logo.png" width={30} height={30} alt="Logo" className="w-6 h-6" />
           </div>
           <div>

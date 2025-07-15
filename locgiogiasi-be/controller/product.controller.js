@@ -1,6 +1,7 @@
 const Product = require('../models/product.model');
 const { uploadToCloudinary, uploadMultipleToCloudinary, deleteFromCloudinary } = require('../config/cloudinary');
 const { validationResult } = require('express-validator');
+const mongoose = require('mongoose');
 
 // Lấy tất cả sản phẩm
 const getAllProducts = async (req, res) => {
@@ -11,11 +12,45 @@ const getAllProducts = async (req, res) => {
         const filter = { isActive: true };
         
         if (search) {
-            filter.$text = { $search: search };
+            // Tìm kiếm trong nhiều trường khác nhau
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { code: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { origin: { $regex: search, $options: 'i' } },
+                { material: { $regex: search, $options: 'i' } },
+                { dimensions: { $regex: search, $options: 'i' } },
+                { warranty: { $regex: search, $options: 'i' } },
+                { 'compatibleModels.carModelName': { $regex: search, $options: 'i' } },
+                { 'compatibleModels.years': search }
+            ];
         }
         
+        // Handle brand filter - support both ObjectId and brand name
         if (brand) {
-            filter.brand = brand;
+            const Brand = require('../models/brand.model');
+            // Check if brand is ObjectId format
+            if (mongoose.Types.ObjectId.isValid(brand)) {
+                filter.brand = brand;
+            } else {
+                // Find brand by name
+                const brandDoc = await Brand.findOne({ name: { $regex: brand, $options: 'i' }, isActive: true });
+                if (brandDoc) {
+                    filter.brand = brandDoc._id;
+                } else {
+                    // If brand not found, return empty result
+                    return res.json({
+                        success: true,
+                        data: [],
+                        pagination: {
+                            page: parseInt(page),
+                            limit: parseInt(limit),
+                            total: 0,
+                            pages: 0
+                        }
+                    });
+                }
+            }
         }
         
         if (minPrice || maxPrice) {
@@ -32,8 +67,9 @@ const getAllProducts = async (req, res) => {
             filter['compatibleModels.carModelName'] = { $regex: carModel, $options: 'i' };
         }
         
-        // Thực hiện query
+        // Thực hiện query với populate brand
         const products = await Product.find(filter)
+            .populate('brand', 'name isActive')
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .sort({ createdAt: -1 });
@@ -62,7 +98,8 @@ const getAllProducts = async (req, res) => {
 // Lấy sản phẩm theo ID
 const getProductById = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const product = await Product.findById(req.params.id)
+            .populate('brand', 'name isActive');
         
         if (!product) {
             return res.status(404).json({
@@ -96,7 +133,33 @@ const createProduct = async (req, res) => {
             });
         }
         
-        const { name, code, brand, compatibleModels, price, description, stock, specifications, tags } = req.body;
+        const { name, code, brand, compatibleModels, price, description, stock, origin, material, dimensions, warranty } = req.body;
+        
+        // Validate brand exists
+        const Brand = require('../models/brand.model');
+        const brandDoc = await Brand.findById(brand);
+        if (!brandDoc || !brandDoc.isActive) {
+            return res.status(400).json({
+                success: false,
+                message: 'Hãng xe không hợp lệ hoặc đã bị vô hiệu hóa'
+            });
+        }
+        
+        // Validate compatibleModels if provided
+        if (compatibleModels) {
+            const parsedModels = JSON.parse(compatibleModels);
+            for (const model of parsedModels) {
+                const carModel = brandDoc.carModels.find(cm => 
+                    cm._id.toString() === model.carModelId && cm.isActive
+                );
+                if (!carModel) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Dòng xe với ID ${model.carModelId} không tồn tại trong hãng ${brandDoc.name} hoặc đã bị vô hiệu hóa`
+                    });
+                }
+            }
+        }
         
         // Xử lý upload ảnh lên Cloudinary
         let images = [];
@@ -120,12 +183,17 @@ const createProduct = async (req, res) => {
             price,
             description,
             stock: stock || 0,
-            images,
-            specifications: specifications ? JSON.parse(specifications) : {},
-            tags: Array.isArray(tags) ? tags : (tags ? [tags] : [])
+            origin: origin || '',
+            material: material || '',
+            dimensions: dimensions || '',
+            warranty: warranty || '',
+            images
         });
         
         await product.save();
+        
+        // Populate brand info before returning
+        await product.populate('brand', 'name isActive');
         
         res.status(201).json({
             success: true,
@@ -154,7 +222,7 @@ const updateProduct = async (req, res) => {
         }
         
         const productId = req.params.id;
-        const { name, code, brand, compatibleModels, price, description, stock, specifications, tags, removeImages } = req.body;
+        const { name, code, brand, compatibleModels, price, description, stock, origin, material, dimensions, warranty, removeImages } = req.body;
         
         const product = await Product.findById(productId);
         if (!product) {
@@ -191,15 +259,49 @@ const updateProduct = async (req, res) => {
         // Cập nhật thông tin sản phẩm
         if (name) product.name = name;
         if (code) product.code = code;
-        if (brand) product.brand = brand;
-        if (compatibleModels) product.compatibleModels = JSON.parse(compatibleModels);
+        if (brand) {
+            // Validate brand exists
+            const Brand = require('../models/brand.model');
+            const brandDoc = await Brand.findById(brand);
+            if (!brandDoc || !brandDoc.isActive) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Hãng xe không hợp lệ hoặc đã bị vô hiệu hóa'
+                });
+            }
+            product.brand = brand;
+        }
+        if (compatibleModels) {
+            const parsedModels = JSON.parse(compatibleModels);
+            // Validate compatibleModels with current brand
+            const Brand = require('../models/brand.model');
+            const brandDoc = await Brand.findById(product.brand);
+            
+            for (const model of parsedModels) {
+                const carModel = brandDoc.carModels.find(cm => 
+                    cm._id.toString() === model.carModelId && cm.isActive
+                );
+                if (!carModel) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Dòng xe với ID ${model.carModelId} không tồn tại trong hãng ${brandDoc.name} hoặc đã bị vô hiệu hóa`
+                    });
+                }
+            }
+            product.compatibleModels = parsedModels;
+        }
         if (price) product.price = price;
         if (description) product.description = description;
         if (stock !== undefined) product.stock = stock;
-        if (specifications) product.specifications = JSON.parse(specifications);
-        if (tags) product.tags = Array.isArray(tags) ? tags : [tags];
+        if (origin !== undefined) product.origin = origin;
+        if (material !== undefined) product.material = material;
+        if (dimensions !== undefined) product.dimensions = dimensions;
+        if (warranty !== undefined) product.warranty = warranty;
         
         await product.save();
+        
+        // Populate brand info before returning
+        await product.populate('brand', 'name isActive');
         
         res.json({
             success: true,
@@ -254,7 +356,8 @@ const searchByCode = async (req, res) => {
     try {
         const { code } = req.params;
         
-        const product = await Product.findOne({ code, isActive: true });
+        const product = await Product.findOne({ code, isActive: true })
+            .populate('brand', 'name isActive');
         
         if (!product) {
             return res.status(404).json({
@@ -282,12 +385,36 @@ const getProductsByBrand = async (req, res) => {
         const { brand } = req.params;
         const { page = 1, limit = 10 } = req.query;
         
-        const products = await Product.find({ brand, isActive: true })
+        // Handle brand parameter - support both ObjectId and brand name
+        let brandFilter;
+        if (mongoose.Types.ObjectId.isValid(brand)) {
+            brandFilter = brand;
+        } else {
+            // Find brand by name
+            const Brand = require('../models/brand.model');
+            const brandDoc = await Brand.findOne({ name: { $regex: brand, $options: 'i' }, isActive: true });
+            if (!brandDoc) {
+                return res.json({
+                    success: true,
+                    data: [],
+                    pagination: {
+                        page: parseInt(page),
+                        limit: parseInt(limit),
+                        total: 0,
+                        pages: 0
+                    }
+                });
+            }
+            brandFilter = brandDoc._id;
+        }
+        
+        const products = await Product.find({ brand: brandFilter, isActive: true })
+            .populate('brand', 'name isActive')
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .sort({ createdAt: -1 });
         
-        const total = await Product.countDocuments({ brand, isActive: true });
+        const total = await Product.countDocuments({ brand: brandFilter, isActive: true });
         
         res.json({
             success: true,
@@ -318,6 +445,7 @@ const getProductsByCarModel = async (req, res) => {
                 'compatibleModels.carModelName': { $regex: carModel, $options: 'i' }, 
                 isActive: true 
             })
+            .populate('brand', 'name isActive')
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .sort({ createdAt: -1 });
@@ -356,7 +484,7 @@ const updateProductStatus = async (req, res) => {
             id,
             { isActive },
             { new: true }
-        );
+        ).populate('brand', 'name isActive');
         
         if (!product) {
             return res.status(404).json({

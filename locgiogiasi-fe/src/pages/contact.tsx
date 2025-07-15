@@ -1,18 +1,35 @@
 import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
+import api from "@/utils/api";
+import toast from "react-hot-toast";
 
 export default function ContactPage() {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
-  const [sent, setSent] = useState<null | "success" | "error">(null);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [sent, setSent] = useState<null | "success" | "error" | "loading">(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent("success");
-    setTimeout(() => setSent(null), 3000);
+    if (!form.name || !form.email || !form.phone || !form.message) {
+      toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
+      return;
+    }
+    try {
+      setSent("loading");
+      await api.post("/contacts", form);
+      setSent("success");
+      toast.success("Gửi tin nhắn thành công! Chúng tôi sẽ phản hồi sớm nhất.");
+      setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (error) {
+      console.error("Contact form failed", error);
+      setSent("error");
+      toast.error("Gửi tin nhắn thất bại. Vui lòng thử lại.");
+    } finally {
+      setTimeout(() => setSent(null), 4000);
+    }
   };
 
   const contactInfo = [
@@ -135,6 +152,20 @@ export default function ContactPage() {
                   </div>
                 </div>
                 <div>
+                  <label htmlFor="subject" className="block text-base font-semibold text-secondary-900 mb-1.5">
+                    Tiêu đề
+                  </label>
+                  <input
+                    type="text"
+                    id="subject"
+                    name="subject"
+                    value={form.subject}
+                    onChange={handleChange}
+                    className="w-full rounded-xl border border-secondary-200 px-4 py-3 text-base text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                    placeholder="Chủ đề liên hệ"
+                  />
+                </div>
+                <div>
                   <label htmlFor="message" className="block text-base font-semibold text-secondary-900 mb-1.5">
                     Nội dung tin nhắn
                   </label>
@@ -152,13 +183,19 @@ export default function ContactPage() {
                 <button
                   type="submit"
                   className="w-full bg-primary-600 text-white rounded-xl py-3 px-6 text-base font-bold hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 shadow-md"
+                  disabled={sent === "loading"}
                 >
                   <Send className="w-5 h-5" />
-                  Gửi tin nhắn
+                  {sent === "loading" ? "Đang gửi..." : "Gửi tin nhắn"}
                 </button>
                 {sent === "success" && (
                   <div className="mt-2 text-green-600 text-center font-medium animate-fade-in">
                     ✅ Gửi thành công! Chúng tôi sẽ liên hệ lại sớm nhất.
+                  </div>
+                )}
+                {sent === "error" && (
+                  <div className="mt-2 text-red-600 text-center font-medium animate-fade-in">
+                    ❌ Gửi thất bại. Vui lòng thử lại sau.
                   </div>
                 )}
               </form>
