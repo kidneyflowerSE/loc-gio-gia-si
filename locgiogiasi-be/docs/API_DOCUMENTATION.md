@@ -6,7 +6,32 @@ API RESTful cho hệ thống quản lý cửa hàng lọc gió ô tô LocGioGiaS
 
 **Base URL:** `http://localhost:3000/api`
 
-**API Version:** 1.0.0
+**API Version:** 1.0.1
+
+**Cập nhật gần nhất:** 2025-07-15
+
+### Thay đổi gần nhất:
+- ✅ **Product Sorting**: Thêm chức năng sắp xếp sản phẩm theo nhiều tiêu chí (v1.0.1)
+
+### Tính năng chính:
+- ✅ **Product Management**: Quản lý sản phẩm lọc gió với upload hình ảnh
+- ✅ **Order Processing**: Xử lý đơn hàng với email automation
+- ✅ **Brand & Car Models**: Quản lý hãng xe và dòng xe tương thích
+- ✅ **Blog System**: Hệ thống blog với quản lý nội dung
+- ✅ **Contact Form**: Form liên hệ với email notification
+- ✅ **Admin Authentication**: JWT-based authentication
+- ✅ **Statistics Dashboard**: Thống kê và báo cáo chi tiết
+- ✅ **File Upload**: Cloudinary integration cho hình ảnh
+- ✅ **Settings Management**: Cài đặt thông tin cửa hàng
+
+### Công nghệ sử dụng:
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB với Mongoose ODM
+- **Authentication**: JWT (JSON Web Token)
+- **File Storage**: Cloudinary
+- **Email**: Nodemailer (Gmail SMTP)
+- **Validation**: Express-validator
+- **Upload**: Multer
 
 ## Authentication
 
@@ -118,13 +143,17 @@ Các route admin yêu cầu authentication:
 
 **Query Parameters:**
 - `page` (number): Trang hiện tại (default: 1)
-- `limit` (number): Số sản phẩm mỗi trang (default: 10)
+- `limit` (number): Số sản phẩm mỗi trang (default: 12)
 - `search` (string): Tìm kiếm theo tên, mã, mô tả
 - `brand` (string): Filter theo brand (ObjectId hoặc tên)
 - `minPrice` (number): Giá tối thiểu
 - `maxPrice` (number): Giá tối đa
 - `year` (string): Năm sản xuất
 - `carModel` (string): Dòng xe
+- `sortBy` (string): Trường sắp xếp (default: 'createdAt')
+  - Giá trị hợp lệ: `createdAt`, `updatedAt`, `name`, `price`, `code`
+- `sortOrder` (string): Thứ tự sắp xếp (default: 'desc')
+  - Giá trị hợp lệ: `asc`, `desc`
 
 **Response:**
 ```json
@@ -157,16 +186,24 @@ Các route admin yêu cầu authentication:
       ],
       "stock": 50,
       "origin": "Japan",
-      "isActive": true
+      "isActive": true,
+      "createdAt": "2024-07-14T10:30:00.000Z",
+      "updatedAt": "2024-07-14T10:30:00.000Z"
     }
   ],
   "pagination": {
     "page": 1,
-    "limit": 10,
+    "limit": 12,
     "total": 150,
-    "pages": 15
+    "pages": 13
   }
 }
+```
+
+**Lưu ý về sắp xếp:**
+- Mặc định sản phẩm được sắp xếp theo `createdAt` (mới nhất trước)
+- Có thể sắp xếp theo nhiều trường khác nhau: tên, giá, mã sản phẩm, ngày tạo/cập nhật
+- Nếu tham số `sortBy` hoặc `sortOrder` không hợp lệ, hệ thống sẽ sử dụng giá trị mặc định
 ```
 
 #### GET `/api/products/:id`
@@ -178,8 +215,29 @@ Các route admin yêu cầu authentication:
 #### GET `/api/products/brand/:brand`
 **Mục đích:** Lấy sản phẩm theo hãng
 
-#### GET `/api/products/car-model/:carModel`
-**Mục đích:** Lấy sản phẩm theo dòng xe
+#### GET `/api/products/brand/:brandId/car-models`
+**Mục đích:** Lấy danh sách dòng xe tương thích của hãng xe (cho dropdown khi tạo sản phẩm)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "_id": "64a7b8c9d1e2f3g4h5i6j7k0",
+      "name": "Camry",
+      "years": ["2018", "2019", "2020", "2021"],
+      "isActive": true
+    },
+    {
+      "_id": "64a7b8c9d1e2f3g4h5i6j7k1", 
+      "name": "Corolla",
+      "years": ["2019", "2020", "2021", "2022"],
+      "isActive": true
+    }
+  ]
+}
+```
 
 #### POST `/api/products` 🔒
 **Mục đích:** Tạo sản phẩm mới
@@ -212,6 +270,19 @@ Các route admin yêu cầu authentication:
 
 #### PATCH `/api/products/:id/status` 🔒
 **Mục đích:** Cập nhật trạng thái sản phẩm
+
+**Request Body:**
+```json
+{
+  "isActive": false
+}
+```
+
+#### GET `/api/products/car-model/:carModel`
+**Mục đích:** Lấy sản phẩm theo dòng xe
+
+**Query Parameters:**
+- Các tham số tương tự như `/api/products` (page, limit, search, v.v.)
 
 ### 3. Brand Management (`/api/brands`)
 
@@ -344,11 +415,56 @@ Các route admin yêu cầu authentication:
 #### GET `/api/orders` 🔒
 **Mục đích:** Lấy danh sách đơn hàng (admin)
 
-**Query Parameters:**
-- `page`, `limit`: Pagination
-- `status`: Filter theo trạng thái
-- `fromDate`, `toDate`: Filter theo thời gian
-- `customerEmail`: Filter theo email khách hàng
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "orders": [
+      {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k8",
+        "orderNumber": "ORD-20240712-1234",
+        "customer": {
+          "name": "Nguyễn Văn A",
+          "email": "customer@example.com",
+          "phone": "0123456789",
+          "address": "123 Đường ABC",
+          "city": "Hồ Chí Minh",
+          "district": "Quận 1",
+          "ward": "Phường Bến Nghé"
+        },
+        "items": [
+          {
+            "product": {
+              "_id": "64a7b8c9d1e2f3g4h5i6j7k9",
+              "name": "Lọc gió Toyota Camry",
+              "code": "TY001",
+              "brand": {
+                "_id": "64a7b8c9d1e2f3g4h5i6j7k0",
+                "name": "Toyota"
+              }
+            },
+            "quantity": 2,
+            "price": 450000
+          }
+        ],
+        "status": "not contacted",
+        "totalAmount": 900000,
+        "totalItems": 2,
+        "orderDate": "2024-07-12T10:30:00.000Z",
+        "updatedAt": "2024-07-12T10:30:00.000Z",
+        "notes": "Ghi chú đặc biệt"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalOrders": 47,
+      "limit": 12
+    }
+  }
+}
+```
 
 #### GET `/api/orders/:id` 🔒
 **Mục đích:** Lấy chi tiết đơn hàng
@@ -362,6 +478,10 @@ Các route admin yêu cầu authentication:
   "status": "contacted"
 }
 ```
+
+**Allowed status values:**
+- `"contacted"` - Đã liên hệ
+- `"not contacted"` - Chưa liên hệ
 
 #### DELETE `/api/orders/:id` 🔒
 **Mục đích:** Xóa đơn hàng
@@ -423,8 +543,14 @@ Các route admin yêu cầu authentication:
 #### GET `/api/blogs/admin/all` 🔒
 **Mục đích:** Lấy tất cả blog cho admin (bao gồm hidden)
 
+**Query Parameters:**
+- `page`, `limit`: Pagination
+- `category`: Filter theo danh mục
+- `status`: Filter theo trạng thái ("published" | "hidden")
+- `search`: Tìm kiếm full-text
+
 #### GET `/api/blogs/admin/:id` 🔒
-**Mục đích:** Lấy chi tiết blog cho admin
+**Mục đích:** Lấy chi tiết blog cho admin theo ID
 
 #### POST `/api/blogs` 🔒
 **Mục đích:** Tạo blog mới
@@ -436,6 +562,7 @@ Các route admin yêu cầu authentication:
 {
   "title": "Tiêu đề blog",
   "content": "Nội dung chi tiết...",
+  "excerpt": "Tóm tắt ngắn của blog (tối đa 500 ký tự)",
   "author": "Tác giả",
   "category": "Hướng dẫn",
   "tags": "lọc gió,bảo dưỡng",
@@ -444,6 +571,12 @@ Các route admin yêu cầu authentication:
   "featuredImage": File // Upload file
 }
 ```
+
+**Lưu ý:**
+- `slug` được tự động tạo từ `title`
+- `publishDate` được set tự động khi tạo
+- Hình ảnh được upload lên Cloudinary
+- Tags được truyền dưới dạng string phân tách bằng dấu phẩy
 
 #### PUT `/api/blogs/:id` 🔒
 **Mục đích:** Cập nhật blog
@@ -481,6 +614,10 @@ Các route admin yêu cầu authentication:
 }
 ```
 
+**Lưu ý:** 
+- Hệ thống chỉ gửi email thông báo đến admin, không lưu thông tin liên hệ vào database
+- Email được gửi qua Gmail SMTP với thông tin cấu hình từ biến môi trường
+
 ### 7. Settings (`/api/settings`)
 
 #### GET `/api/settings`
@@ -496,10 +633,16 @@ Các route admin yêu cầu authentication:
     "address": "123 Đường ABC, Quận 1, TP.HCM",
     "phone": "0123456789",
     "email": "info@locgiogiasi.com",
-    "logo": "https://res.cloudinary.com/demo/image/upload/logo.png"
+    "logo": "https://res.cloudinary.com/demo/image/upload/logo.png",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-07-12T10:30:00.000Z"
   }
 }
 ```
+
+**Tính năng đặc biệt:**
+- Tự động tạo settings mặc định nếu chưa có trong database
+- Singleton pattern: chỉ có 1 document settings duy nhất
 
 #### PUT `/api/settings` 🔒
 **Mục đích:** Cập nhật thông tin cài đặt
@@ -515,6 +658,13 @@ Các route admin yêu cầu authentication:
 }
 ```
 
+**Validation Rules:**
+- `storeName`: required, string
+- `address`: required, string  
+- `phone`: required, string
+- `email`: required, valid email format
+- `logo`: optional, string (URL)
+
 ### 8. Statistics (`/api/statistics`) 🔒
 
 #### GET `/api/statistics/dashboard`
@@ -527,35 +677,170 @@ Các route admin yêu cầu authentication:
   "data": {
     "products": {
       "total": 150,
-      "active": 145,
+      "available": 145,
       "inactive": 5,
       "lowStock": 8
     },
     "orders": {
       "total": 1250,
       "thisMonth": 89,
+      "lastMonth": 72,
       "contacted": 1100,
-      "notContacted": 150
+      "notContacted": 150,
+      "contactedThisMonth": 78,
+      "contactedLastMonth": 65,
+      "growth": {
+        "orders": "23.6%",
+        "contacted": "20.0%"
+      }
     },
     "revenue": {
       "total": 125000000,
       "thisMonth": 8500000,
-      "lastMonth": 7200000,
-      "growth": 18.1
+      "averageOrderValue": 720000,
+      "contactedOrdersRevenue": 118000000
     },
-    "recentOrders": [ /* 5 đơn hàng gần nhất */ ]
+    "recentOrders": [
+      {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k8",
+        "orderNumber": "ORD-20240712-1234",
+        "customer": {
+          "name": "Nguyễn Văn A",
+          "email": "customer@example.com"
+        },
+        "totalAmount": 900000,
+        "status": "not contacted",
+        "orderDate": "2024-07-12T10:30:00.000Z"
+      }
+      // ... 4 more recent orders
+    ]
   }
 }
 ```
 
 #### GET `/api/statistics/products`
-**Mục đích:** Thống kê sản phẩm
+**Mục đích:** Thống kê chi tiết sản phẩm
+
+**Query Parameters:**
+- `period` (string): Khoảng thời gian ("week" | "month" | "year", default: "month")
+- `count` (number): Số period lấy dữ liệu (default: 12)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "total": 150,
+      "available": 145,
+      "inactive": 5,
+      "lowStock": 8
+    },
+    "byBrand": [
+      {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k9",
+        "name": "Toyota", 
+        "productCount": 45,
+        "percentage": 30.0
+      },
+      {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k0",
+        "name": "Honda",
+        "productCount": 38,
+        "percentage": 25.3
+      }
+    ],
+    "lowStockProducts": [
+      {
+        "_id": "64a7b8c9d1e2f3g4h5i6j7k1",
+        "name": "Lọc gió Toyota Camry",
+        "code": "TY001",
+        "stock": 3,
+        "brand": "Toyota"
+      }
+    ],
+    "priceDistribution": {
+      "under200k": 25,
+      "200k-500k": 85,
+      "500k-1m": 35,
+      "over1m": 5
+    }
+  }
+}
+```
 
 #### GET `/api/statistics/orders`
-**Mục đích:** Thống kê đơn hàng
+**Mục đích:** Thống kê chi tiết đơn hàng
+
+**Query Parameters:**
+- `period` (string): Khoảng thời gian ("week" | "month" | "year", default: "month")
+- `count` (number): Số period lấy dữ liệu (default: 12)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "summary": {
+      "total": 1250,
+      "contacted": 1100,
+      "notContacted": 150,
+      "averageOrderValue": 720000,
+      "totalRevenue": 125000000
+    },
+    "trends": [
+      {
+        "period": "2024-07",
+        "orders": 89,
+        "contacted": 78,
+        "revenue": 8500000
+      },
+      {
+        "period": "2024-06", 
+        "orders": 72,
+        "contacted": 65,
+        "revenue": 7200000
+      }
+      // ... more periods
+    ],
+    "byStatus": [
+      {
+        "_id": "contacted",
+        "count": 1100,
+        "percentage": 88.0,
+        "revenue": 118000000
+      },
+      {
+        "_id": "not contacted",
+        "count": 150, 
+        "percentage": 12.0,
+        "revenue": 7000000
+      }
+    ]
+  }
+}
+```
 
 #### GET `/api/statistics/contacts`
 **Mục đích:** Thống kê liên hệ
+
+**Query Parameters:**
+- `period` (string): Khoảng thời gian ("week" | "month" | "year", default: "month")
+- `count` (number): Số period lấy dữ liệu (default: 12)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Contact statistics not available",
+    "reason": "Contact form only sends emails, data not stored in database",
+    "suggestion": "Consider implementing contact storage to enable statistics"
+  }
+}
+```
+
+**Lưu ý:** Endpoint này trả về thông báo vì hệ thống không lưu contact vào database.
 
 ### 9. Health Check
 
@@ -659,56 +944,111 @@ Các route admin yêu cầu authentication:
 ## File Upload
 
 ### Supported endpoints:
-- `POST /api/products` - Multiple images
-- `PUT /api/products/:id` - Multiple images  
-- `POST /api/blogs` - Single featured image
-- `PUT /api/blogs/:id` - Single featured image
+- `POST /api/products` - Multiple images (field name: `images`)
+- `PUT /api/products/:id` - Multiple images (field name: `images`)  
+- `POST /api/blogs` - Single featured image (field name: `featuredImage`)
+- `PUT /api/blogs/:id` - Single featured image (field name: `featuredImage`)
 
 ### Configuration:
 - **Storage**: Cloudinary
-- **Max file size**: 10MB
+- **Max file size**: 10MB per file
 - **Allowed formats**: JPG, JPEG, PNG, WebP
-- **Temp upload**: Files temporarily stored in `/uploads/temp/`
+- **Temp storage**: Files temporarily stored in `/uploads/temp/` before Cloudinary upload
+- **Auto cleanup**: Temporary files automatically deleted after processing
 
 ### Request format:
 ```javascript
 Content-Type: multipart/form-data
 
-// Multiple files
+// For products - multiple files
 images: [File, File, File]
 
-// Single file  
+// For blogs - single file  
 featuredImage: File
+
+// Other form data
+name: "Product name"
+description: "Product description"
+// ... other fields
 ```
 
-### Response format:
+### Response format (sau khi upload thành công):
 ```json
+// For single image
 {
   "public_id": "products/sample1_xyz123",
   "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/products/sample1_xyz123.jpg",
   "width": 1200,
   "height": 800,
-  "alt": "Product image"
+  "alt": ""
+}
+
+// For multiple images (trong product)
+{
+  "images": [
+    {
+      "public_id": "products/sample1_xyz123", 
+      "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/products/sample1_xyz123.jpg",
+      "width": 1200,
+      "height": 800,
+      "alt": ""
+    },
+    {
+      "public_id": "products/sample2_abc456",
+      "url": "https://res.cloudinary.com/demo/image/upload/v1234567890/products/sample2_abc456.jpg", 
+      "width": 1000,
+      "height": 600,
+      "alt": ""
+    }
+  ]
 }
 ```
+
+### Upload folders:
+- **Products**: `/products/`
+- **Blogs**: `/blogs/`
+- **Temp**: `/temp/` (auto-deleted)
+
+### Error handling:
+- Upload failures return specific error messages
+- Invalid file types are rejected before upload
+- File size limits enforced at middleware level
+- Cloudinary errors are caught and handled gracefully
 
 ## Email Integration
 
 ### Features:
-- Order confirmation emails
-- Contact form notifications
-- Admin notifications
+- **Order confirmation emails** - Gửi đến cả khách hàng và admin khi có đơn hàng mới
+- **Contact form notifications** - Gửi email thông báo đến admin khi có liên hệ mới
 
 ### Configuration:
 ```env
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
+ADMIN_EMAIL=admin@locgiogiasi.com  # Email nhận thông báo admin (optional, mặc định dùng EMAIL_USER)
 ```
 
 ### Email Templates:
-1. **Order Confirmation** - Sent to customer and admin
-2. **Contact Form** - Sent to admin
-3. **Password Reset** - Future feature
+
+#### 1. Order Confirmation Email (Customer)
+- **Chủ đề:** `Xác nhận đơn hàng #<orderNumber> - LocGioGiaSi`
+- **Nội dung:** Thông tin chi tiết đơn hàng, khách hàng, sản phẩm và tổng tiền
+- **Gửi đến:** Email khách hàng
+
+#### 2. Order Notification Email (Admin) 
+- **Chủ đề:** `Đơn hàng mới #<orderNumber> - LocGioGiaSi`
+- **Nội dung:** Thông tin đầy đủ đơn hàng bao gồm ID sản phẩm để admin xử lý
+- **Gửi đến:** ADMIN_EMAIL hoặc EMAIL_USER
+
+#### 3. Contact Form Email (Admin)
+- **Chủ đề:** Từ subject của form liên hệ
+- **Nội dung:** Thông tin người gửi và nội dung tin nhắn
+- **Gửi đến:** ADMIN_EMAIL hoặc EMAIL_USER
+
+### SMTP Configuration:
+- **Service:** Gmail
+- **Authentication:** App Password (recommended)
+- **Security:** TLS/SSL enabled
 
 ## Pagination
 
@@ -744,9 +1084,23 @@ GET /api/products?page=2&limit=20
 - **Orders**: status, date range, customer email
 - **Blogs**: category, tags, status
 
-### Example:
+### Sorting:
+- **Products**: Hỗ trợ sắp xếp theo `createdAt`, `updatedAt`, `name`, `price`, `code`
+- **Default**: `createdAt` (desc) - sản phẩm mới nhất trước
+
+### Examples:
 ```
+# Tìm kiếm và filter cơ bản
 GET /api/products?search=toyota&brand=64a7b8c9d1e2f3g4h5i6j7k9&minPrice=100000&maxPrice=500000&year=2020
+
+# Sắp xếp theo giá từ thấp đến cao
+GET /api/products?sortBy=price&sortOrder=asc
+
+# Sắp xếp theo tên A-Z với tìm kiếm
+GET /api/products?search=honda&sortBy=name&sortOrder=asc
+
+# Kết hợp nhiều filter và sort
+curl -X GET "http://localhost:3000/api/products?brand=toyota&minPrice=100000&sortBy=price&sortOrder=desc&page=1&limit=12"
 ```
 
 ## Rate Limiting
@@ -780,17 +1134,32 @@ GET /api/products?search=toyota&brand=64a7b8c9d1e2f3g4h5i6j7k9&minPrice=100000&m
 
 ### Environment:
 ```env
+# Server Configuration
 NODE_ENV=development
 PORT=3000
+CORS_ORIGIN=http://localhost:3001
+
+# Database
 MONGODB_URI=mongodb://localhost:27017/locgiogiasi
+
+# JWT Authentication
 JWT_SECRET=your-secret-key
 JWT_EXPIRES_IN=7d
+
+# Cloudinary (File Upload)
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-api-key
 CLOUDINARY_API_SECRET=your-api-secret
+
+# Email (Nodemailer)
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-app-password
-CORS_ORIGIN=http://localhost:3001
+ADMIN_EMAIL=admin@locgiogiasi.com  # Optional, defaults to EMAIL_USER
+
+# Default Admin (Auto-created if none exists)
+DEFAULT_ADMIN_USERNAME=admin
+DEFAULT_ADMIN_PASSWORD=admin123
+DEFAULT_ADMIN_EMAIL=admin@locgiogiasi.com
 ```
 
 ### Postman Examples:
@@ -807,7 +1176,17 @@ curl -X POST http://localhost:3000/api/admin/login \
 
 #### Get Products:
 ```bash
+# Lấy sản phẩm cơ bản
 curl -X GET "http://localhost:3000/api/products?page=1&limit=10&search=toyota"
+
+# Sắp xếp theo giá từ thấp đến cao
+curl -X GET "http://localhost:3000/api/products?sortBy=price&sortOrder=asc"
+
+# Sắp xếp theo tên A-Z với tìm kiếm
+curl -X GET "http://localhost:3000/api/products?search=honda&sortBy=name&sortOrder=asc"
+
+# Kết hợp nhiều filter và sort
+curl -X GET "http://localhost:3000/api/products?brand=toyota&minPrice=100000&sortBy=price&sortOrder=desc&page=1&limit=12"
 ```
 
 #### Create Order:
@@ -856,3 +1235,29 @@ curl -X POST http://localhost:3000/api/orders \
 - Error tracking
 - Performance metrics
 - Health checks
+
+---
+
+## Changelog
+
+### v1.0.1 (2025-07-15)
+#### 🆕 Features
+- **Product Sorting**: Thêm chức năng sắp xếp sản phẩm
+  - Tham số `sortBy`: `createdAt`, `updatedAt`, `name`, `price`, `code`
+  - Tham số `sortOrder`: `asc`, `desc`
+  - Validation cho các tham số sắp xếp
+  - Giá trị mặc định: `sortBy=createdAt`, `sortOrder=desc`
+
+#### 📝 Documentation
+- Cập nhật API documentation với các tham số sắp xếp mới
+- Thêm ví dụ curl commands cho chức năng sắp xếp
+- Cập nhật response examples bao gồm `createdAt` và `updatedAt`
+
+### v1.0.0 (2024-07-14)
+#### 🎉 Initial Release
+- API cơ bản cho quản lý sản phẩm, đơn hàng, blog
+- Authentication với JWT
+- Upload file với Cloudinary
+- Email automation
+- Admin dashboard APIs
+- Statistics và reporting
