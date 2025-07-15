@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 // Lấy tất cả sản phẩm
 const getAllProducts = async (req, res) => {
     try {
-        const { page = 1, limit = 12, search, brand, minPrice, maxPrice, year, carModel } = req.query;
+        const { page = 1, limit = 12, search, brand, minPrice, maxPrice, year, carModel, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
         
         // Tạo filter object
         const filter = { isActive: true };
@@ -67,12 +67,24 @@ const getAllProducts = async (req, res) => {
             filter['compatibleModels.carModelName'] = { $regex: carModel, $options: 'i' };
         }
         
+        // Tạo object sort dựa trên tham số sortBy và sortOrder
+        const sortOptions = {};
+        const validSortFields = ['createdAt', 'updatedAt', 'name', 'price', 'code'];
+        const validSortOrders = ['asc', 'desc'];
+        
+        // Validate sortBy field
+        const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+        // Validate sortOrder
+        const order = validSortOrders.includes(sortOrder.toLowerCase()) ? sortOrder.toLowerCase() : 'desc';
+        
+        sortOptions[sortField] = order === 'asc' ? 1 : -1;
+        
         // Thực hiện query với populate brand
         const products = await Product.find(filter)
             .populate('brand', 'name isActive')
             .limit(limit * 1)
             .skip((page - 1) * limit)
-            .sort({ createdAt: -1 });
+            .sort(sortOptions);
         
         const total = await Product.countDocuments(filter);
         
