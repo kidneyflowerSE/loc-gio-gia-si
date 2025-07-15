@@ -6,9 +6,12 @@ API RESTful cho hệ thống quản lý cửa hàng lọc gió ô tô LocGioGiaS
 
 **Base URL:** `http://localhost:3000/api`
 
-**API Version:** 1.0.0
+**API Version:** 1.0.1
 
-**Cập nhật gần nhất:** 2024-07-14
+**Cập nhật gần nhất:** 2025-07-15
+
+### Thay đổi gần nhất:
+- ✅ **Product Sorting**: Thêm chức năng sắp xếp sản phẩm theo nhiều tiêu chí (v1.0.1)
 
 ### Tính năng chính:
 - ✅ **Product Management**: Quản lý sản phẩm lọc gió với upload hình ảnh
@@ -140,13 +143,17 @@ Các route admin yêu cầu authentication:
 
 **Query Parameters:**
 - `page` (number): Trang hiện tại (default: 1)
-- `limit` (number): Số sản phẩm mỗi trang (default: 10)
+- `limit` (number): Số sản phẩm mỗi trang (default: 12)
 - `search` (string): Tìm kiếm theo tên, mã, mô tả
 - `brand` (string): Filter theo brand (ObjectId hoặc tên)
 - `minPrice` (number): Giá tối thiểu
 - `maxPrice` (number): Giá tối đa
 - `year` (string): Năm sản xuất
 - `carModel` (string): Dòng xe
+- `sortBy` (string): Trường sắp xếp (default: 'createdAt')
+  - Giá trị hợp lệ: `createdAt`, `updatedAt`, `name`, `price`, `code`
+- `sortOrder` (string): Thứ tự sắp xếp (default: 'desc')
+  - Giá trị hợp lệ: `asc`, `desc`
 
 **Response:**
 ```json
@@ -179,16 +186,24 @@ Các route admin yêu cầu authentication:
       ],
       "stock": 50,
       "origin": "Japan",
-      "isActive": true
+      "isActive": true,
+      "createdAt": "2024-07-14T10:30:00.000Z",
+      "updatedAt": "2024-07-14T10:30:00.000Z"
     }
   ],
   "pagination": {
     "page": 1,
-    "limit": 10,
+    "limit": 12,
     "total": 150,
-    "pages": 15
+    "pages": 13
   }
 }
+```
+
+**Lưu ý về sắp xếp:**
+- Mặc định sản phẩm được sắp xếp theo `createdAt` (mới nhất trước)
+- Có thể sắp xếp theo nhiều trường khác nhau: tên, giá, mã sản phẩm, ngày tạo/cập nhật
+- Nếu tham số `sortBy` hoặc `sortOrder` không hợp lệ, hệ thống sẽ sử dụng giá trị mặc định
 ```
 
 #### GET `/api/products/:id`
@@ -1069,9 +1084,23 @@ GET /api/products?page=2&limit=20
 - **Orders**: status, date range, customer email
 - **Blogs**: category, tags, status
 
-### Example:
+### Sorting:
+- **Products**: Hỗ trợ sắp xếp theo `createdAt`, `updatedAt`, `name`, `price`, `code`
+- **Default**: `createdAt` (desc) - sản phẩm mới nhất trước
+
+### Examples:
 ```
+# Tìm kiếm và filter cơ bản
 GET /api/products?search=toyota&brand=64a7b8c9d1e2f3g4h5i6j7k9&minPrice=100000&maxPrice=500000&year=2020
+
+# Sắp xếp theo giá từ thấp đến cao
+GET /api/products?sortBy=price&sortOrder=asc
+
+# Sắp xếp theo tên A-Z với tìm kiếm
+GET /api/products?search=honda&sortBy=name&sortOrder=asc
+
+# Kết hợp nhiều filter và sort
+curl -X GET "http://localhost:3000/api/products?brand=toyota&minPrice=100000&sortBy=price&sortOrder=desc&page=1&limit=12"
 ```
 
 ## Rate Limiting
@@ -1147,7 +1176,17 @@ curl -X POST http://localhost:3000/api/admin/login \
 
 #### Get Products:
 ```bash
+# Lấy sản phẩm cơ bản
 curl -X GET "http://localhost:3000/api/products?page=1&limit=10&search=toyota"
+
+# Sắp xếp theo giá từ thấp đến cao
+curl -X GET "http://localhost:3000/api/products?sortBy=price&sortOrder=asc"
+
+# Sắp xếp theo tên A-Z với tìm kiếm
+curl -X GET "http://localhost:3000/api/products?search=honda&sortBy=name&sortOrder=asc"
+
+# Kết hợp nhiều filter và sort
+curl -X GET "http://localhost:3000/api/products?brand=toyota&minPrice=100000&sortBy=price&sortOrder=desc&page=1&limit=12"
 ```
 
 #### Create Order:
@@ -1196,3 +1235,29 @@ curl -X POST http://localhost:3000/api/orders \
 - Error tracking
 - Performance metrics
 - Health checks
+
+---
+
+## Changelog
+
+### v1.0.1 (2025-07-15)
+#### 🆕 Features
+- **Product Sorting**: Thêm chức năng sắp xếp sản phẩm
+  - Tham số `sortBy`: `createdAt`, `updatedAt`, `name`, `price`, `code`
+  - Tham số `sortOrder`: `asc`, `desc`
+  - Validation cho các tham số sắp xếp
+  - Giá trị mặc định: `sortBy=createdAt`, `sortOrder=desc`
+
+#### 📝 Documentation
+- Cập nhật API documentation với các tham số sắp xếp mới
+- Thêm ví dụ curl commands cho chức năng sắp xếp
+- Cập nhật response examples bao gồm `createdAt` và `updatedAt`
+
+### v1.0.0 (2024-07-14)
+#### 🎉 Initial Release
+- API cơ bản cho quản lý sản phẩm, đơn hàng, blog
+- Authentication với JWT
+- Upload file với Cloudinary
+- Email automation
+- Admin dashboard APIs
+- Statistics và reporting
