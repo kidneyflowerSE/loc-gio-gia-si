@@ -3,9 +3,11 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Mail, MapPin, PhoneCall, ShoppingCart } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { totalItems } = useCart();
   const router = useRouter();
 
   const isActive = (href: string) => {
@@ -14,9 +16,9 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-secondary-800 text-white shadow-md">
+    <header className="sticky  top-0 z-30 w-full bg-white text-black shadow-md">
       {/* Top contact bar (desktop only) */}
-      <div className="hidden lg:flex items-center justify-between px-6 py-2 text-sm bg-secondary-900">
+      <div className="hidden lg:flex items-center justify-between px-6 py-2 text-sm bg-primary-600 text-white">
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-2">
             <PhoneCall className="w-4 h-4" /> 0909&nbsp;090&nbsp;909
@@ -28,7 +30,7 @@ export default function Header() {
             <MapPin className="w-4 h-4" /> 123 Đường ABC, Quận XYZ, TP.HCM
           </span>
         </div>
-        <Link href="/contact" className="hover:text-primary-400 font-medium">
+        <Link href="/contact" className="hover:text-white font-medium">
           Liên hệ ngay
         </Link>
       </div>
@@ -55,8 +57,8 @@ export default function Header() {
 
         {/* Logo */}
         <Link href="/" aria-label="Lọc gió ô tô" className="flex items-center gap-2">
-          <Image src="/logo.png" alt="Lọc gió ô tô" width={120} height={120} className="object-contain" />
-          <span className="text-2xl font-bold">TH Auto Parts</span>
+          <Image src="/logo.png" alt="Lọc gió ô tô" width={60} height={60} className="object-contain" />
+          <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</span>
         </Link>
 
         {/* Search (desktop) */}
@@ -113,7 +115,11 @@ export default function Header() {
         {/* Cart icon */}
         <Link href="/cart" className="relative flex items-center hover:text-primary-300">
           <ShoppingCart className="w-6 h-6" />
-          <span className="absolute -top-2 -right-3 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
+          {totalItems > 0 && (
+            <span className="absolute -top-2 -right-3 bg-primary-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {totalItems}
+            </span>
+          )}
         </Link>
       </div>
 

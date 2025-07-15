@@ -3,72 +3,108 @@ import {
   BarChart3, 
   ArrowUpRight, 
   ArrowDownRight, 
-  Package, 
-  Users, 
-  DollarSign,
   ShoppingBag,
   PhoneCall,
-  Mail,
-  Calendar,
-  CheckCircle
+  CheckCircle,
+  Percent
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import api from '@/utils/api';
 
-// Sample data
-const recentOrders = [
-  { id: "#ORD-5412", customer: "Nguyễn Văn A", date: "20/06/2023", status: "Đã liên hệ", amount: 1250000, phone: "0901234567" },
-  { id: "#ORD-5411", customer: "Trần Thị B", date: "19/06/2023", status: "Chưa liên hệ", amount: 890000, phone: "0907654321" },
-  { id: "#ORD-5410", customer: "Lê Văn C", date: "18/06/2023", status: "Đã liên hệ", amount: 2340000, phone: "0903456789" },
-  { id: "#ORD-5409", customer: "Phạm Thị D", date: "17/06/2023", status: "Chưa liên hệ", amount: 750000, phone: "0909876543" },
-  { id: "#ORD-5408", customer: "Hoàng Văn E", date: "16/06/2023", status: "Đã liên hệ", amount: 1350000, phone: "0904567890" },
-];
-
-// Weekly data - last 4 weeks
-const weeklyOrdersData = [42, 38, 55, 47];
-
-// Monthly data - last 6 months
-const monthlyOrdersData = [125, 98, 156, 142, 168, 150];
+// No local sample data – everything comes from API
 
 export default function AdminDashboard() {
-  const [timeframe, setTimeframe] = useState<"week" | "month">("week");
+  // Chart labels & data derived from API timeTrends
   const router = useRouter();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
+  const CACHE_KEY = 'admin_dashboard_stats';
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
   // Check if user is authenticated
   useEffect(() => {
-    // This would typically check for a token or session
     const isAuthenticated = localStorage.getItem("admin_token");
     if (!isAuthenticated) {
       router.push("/admin/login");
     }
   }, [router]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get('/statistics/orders');
+        if (response.data.success) {
+          setStats(response.data.data);
+          // cache with timestamp
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data: response.data.data}));
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Error fetching stats');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!localStorage.getItem('admin_token')) {
+      router.push('/admin/login');
+      return;
+    }
+
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Date.now() - parsed.ts < CACHE_TTL) {
+          setStats(parsed.data);
+          setLoading(false);
+          return;
+        }
+      } catch { /* ignore parse error */ }
+    }
+    fetchStats();
+  }, [router]);
   
-  // Calculate statistics
-  const totalOrders = 387;
-  const totalContactedOrders = 215; // Đã liên hệ
-  const totalNewOrders = totalOrders - totalContactedOrders; // Chưa liên hệ
+  // Skeleton cards
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-800">Bảng điều khiển</h1>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+          {[1,2,3,4].map(i=> (
+            <div key={i} className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2 h-72 bg-gray-100 rounded-xl animate-pulse" />
+          <div className="h-72 bg-gray-100 rounded-xl animate-pulse" />
+        </div>
+        <div className="h-64 bg-gray-100 rounded-xl animate-pulse" />
+      </AdminLayout>
+    );
+  }
+  if (error) return <AdminLayout><div className="p-6 text-red-600">Error: {error}</div></AdminLayout>;
+  if (!stats) return null;
+
+  const overview = stats.overview;
+  const totalOrders = overview.totalOrders;
+  const totalContactedOrders = overview.contactedOrders;
+  const totalNewOrders = overview.notContactedOrders;
+  const contactRate = parseFloat(overview.contactRate);
   
   // Get chart data based on timeframe
-  const chartData = timeframe === "week" ? weeklyOrdersData : monthlyOrdersData;
-  const chartLabels = timeframe === "week" 
-    ? ["Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4"] 
-    : ["T1", "T2", "T3", "T4", "T5", "T6"];
+  const chartData = stats.timeTrends.data.map((item: any) => item.totalOrders);
+  const chartLabels = stats.timeTrends.data.map((item: any) => `${item._id.month}/${item._id.year}`);
   
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Bảng điều khiển</h1>
-        
-        <div className="flex space-x-2">
-          <select 
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value as "week" | "month")}
-            className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-          >
-            <option value="week">Theo tuần</option>
-            <option value="month">Theo tháng</option>
-          </select>
-        </div>
       </div>
 
       {/* Stats Cards */}
@@ -76,23 +112,30 @@ export default function AdminDashboard() {
         <StatCard 
           title="Tổng đơn hàng" 
           value={totalOrders} 
-          change={8.5} 
+          change={0} 
           icon={ShoppingBag}
           color="bg-blue-500"
         />
         <StatCard 
           title="Đã liên hệ" 
           value={totalContactedOrders}
-          change={12.4} 
+          change={0} 
           icon={PhoneCall}
           color="bg-green-500"
         />
         <StatCard 
           title="Chưa liên hệ" 
           value={totalNewOrders}
-          change={-4.1} 
+          change={0} 
           icon={CheckCircle}
           color="bg-indigo-500"
+        />
+        <StatCard 
+          title="Tỉ lệ liên hệ" 
+          value={`${contactRate}%`}
+          change={0}
+          icon={BarChart3}
+          color="bg-purple-500"
         />
         {/* Bạn có thể thêm card khác nếu cần */}
       </div>
@@ -103,7 +146,7 @@ export default function AdminDashboard() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-gray-800">
-              {timeframe === "week" ? "Đơn hàng theo tuần" : "Đơn hàng theo tháng"}
+              Đơn hàng theo tháng
             </h2>
             <div className="flex items-center space-x-2 text-sm">
               <span className="flex items-center">
@@ -118,7 +161,7 @@ export default function AdminDashboard() {
               <div className="w-full h-48 relative">
                 {/* Bar Chart */}
                 <div className="flex justify-between items-end h-full">
-                  {chartData.map((value, index) => (
+                  {chartData.map((value: number, index: number) => (
                     <div key={index} className="flex flex-col items-center">
                       <div 
                         className="w-16 bg-primary-500/80 hover:bg-primary-600 transition-all rounded-t-md" 
@@ -214,22 +257,19 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600">{order.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{order.customer}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.date}</td>
+              {stats.recentOrders.map((order: any) => (
+                <tr key={order._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600">{order.orderNumber}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{order.customer.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{order.customer.phone}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.orderDate).toLocaleDateString('vi-VN')}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full ${
-                      order.status === 'Đã liên hệ' ? 'bg-green-100 text-green-800' : 
-                      'bg-indigo-100 text-indigo-800'
-                    }`}>
-                      {order.status}
+                    <span className={`inline-flex px-2.5 py-0.5 text-xs font-semibold rounded-full ${order.status === 'contacted' ? 'bg-green-100 text-green-800' : 'bg-indigo-100 text-indigo-800'}`}>
+                      {order.status === 'contacted' ? 'Đã liên hệ' : 'Chưa liên hệ'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">
-                    {order.amount.toLocaleString('vi-VN')}₫
+                    {order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') + '₫' : '-'}
                   </td>
                 </tr>
               ))}

@@ -2,97 +2,41 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
-import Layout from "@/components/Layout";
 import ProductCard, { Product } from "@/components/ProductCard";
 import { ShoppingCart, Zap } from "lucide-react";
 
-// Dummy products (will be replaced with real data later)
-const products: Product[] = [
-  {
-    id: "1",
-    name: "Lọc Gió Động Cơ",
-    slug: "loc-gio-dong-co-toyota-vios-2019",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 450000,
-    brand: "Toyota",
-    vehicle_type: "Camry, Vios",
-    year: 2019,
-    product_code: "17801-0L040"
-  },
-  {
-    id: "2",
-    name: "Lọc Gió Động Cơ",
-    slug: "loc-gio-dong-co-honda-city-2020",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 480000,
-    brand: "Honda",
-    vehicle_type: "Honda City",
-    year: 2020,
-    product_code: "17220-5R0-008"
-  },
-  {
-    id: "3",
-    name: "Lọc Gió Điều Hòa",
-    slug: "loc-gio-dieu-hoa-ford-ranger-2021",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 320000,
-    brand: "Ford",
-    vehicle_type: "Ranger",
-    year: 2021,
-    product_code: "AB39-19G244-AB"
-  },
-  {
-    id: "4",
-    name: "Lọc Gió Động Cơ",
-    slug: "loc-gio-dong-co-mazda-3-2022",
-    image: "/loc-gio-dieu-hoa.jpg",
-    price: 550000,
-    brand: "Mazda",
-    vehicle_type: "Mazda 3",
-    year: 2022,
-    product_code: "PE07-13-Z40A"
-  },
-];
+import api from "@/utils/api";
+import { useCart } from "@/context/CartContext";
+import toast from "react-hot-toast";
 
-// Product details (additional info not in the card)
-const productDetails = {
-  description: "Lọc gió động cơ chính hãng, giúp lọc bụi bẩn và các tạp chất trong không khí trước khi vào động cơ, giúp động cơ hoạt động hiệu quả và kéo dài tuổi thọ.",
-  specifications: [
-    { name: "Thương hiệu", value: "OEM" },
-    { name: "Xuất xứ", value: "Nhật Bản" },
-    { name: "Chất liệu", value: "Giấy lọc cao cấp" },
-    { name: "Kích thước", value: "278 x 168 x 34mm" },
-    { name: "Mã sản phẩm", value: "17801-0P010" },
-    { name: "Bảo hành", value: "12 tháng" },
-  ],
-  features: [
-    "Lọc sạch bụi bẩn, tạp chất trong không khí",
-    "Giúp động cơ hoạt động hiệu quả",
-    "Tiết kiệm nhiên liệu",
-    "Kéo dài tuổi thọ động cơ",
-    "Dễ dàng thay thế",
-  ],
-  compatibleVehicles: [
-    "Toyota Camry 2018-2022",
-    "Toyota Vios 2019-2022",
-    "Toyota Corolla Altis 2019-2022",
-  ]
-};
+interface ProductDetail {
+  _id: string;
+  name: string;
+  code: string;
+  price: number;
+  brand: { _id: string; name: string };
+  description: string;
+  images: { url: string; alt: string }[];
+  compatibleModels: { carModelName: string; years: string[] }[];
+  origin?: string;
+  material?: string;
+  dimensions?: string;
+  warranty?: string;
+  stock: number;
+}
 
-export default function ProductDetailPage() {
+interface PageProps {
+  product: ProductDetail | null;
+  related: Product[];
+}
+
+export default function ProductDetailPage({ product, related }: PageProps) {
   const router = useRouter();
-  const { slug } = router.query;
-  
+
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
-  
-  // Find the product based on the slug
-  const product = products.find(p => p.slug === slug);
-  
-  // Related products (excluding current product)
-  const relatedProducts = products.filter(p => p.slug !== slug).slice(0, 4);
-  
-  // If product not found or page is still loading
+  const { addItem } = useCart();
+
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -101,12 +45,10 @@ export default function ProductDetailPage() {
           {router.isFallback ? "Đang tải..." : "Không tìm thấy sản phẩm"}
         </h1>
         <p className="text-secondary-600 mb-6 text-sm">
-          {router.isFallback 
-            ? "Vui lòng đợi trong giây lát" 
-            : "Sản phẩm bạn đang tìm không tồn tại hoặc đã bị xóa"}
+          {router.isFallback ? "Vui lòng đợi trong giây lát" : "Sản phẩm bạn đang tìm không tồn tại hoặc đã bị xóa"}
         </p>
-        <Link 
-          href="/products" 
+        <Link
+          href="/products"
           className="inline-block bg-primary-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
           Xem sản phẩm khác
@@ -115,7 +57,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  const fullProductName = `${product.name} ${product.vehicle_type} ${product.year} (${product.product_code})`;
+  const firstCarModel = product.compatibleModels[0]?.carModelName || "";
+  const yearsDisplay = product.compatibleModels[0]?.years?.join(", ") || "";
+  const fullProductName = `${product.name} ${firstCarModel} ${yearsDisplay ? yearsDisplay : ""} (${product.code})`;
 
   return (
     <div className="bg-white min-h-screen">
@@ -141,7 +85,8 @@ export default function ProductDetailPage() {
               <div className="bg-white rounded-2xl overflow-hidden border border-secondary-200/60">
                 <div className="relative aspect-square">
                   <Image
-                    src={product.image}
+                    // src={product.images[0]?.url || "/loc-gio-dieu-hoa.jpg"}
+                    src="/loc-gio-dieu-hoa.jpg"
                     alt={fullProductName}
                     fill
                     className="object-cover"
@@ -152,14 +97,15 @@ export default function ProductDetailPage() {
               
               {/* Thumbnail Gallery */}
               <div className="grid grid-cols-4 gap-2 mt-3">
-                {[1, 2, 3, 4].map((i) => (
+                {product.images.map((img, i) => (
                   <button 
                     key={i} 
                     className="relative aspect-square bg-secondary-100 rounded-lg overflow-hidden cursor-pointer ring-2 ring-transparent hover:ring-primary-500 transition-all"
                   >
                     <Image
-                      src={product.image}
-                      alt={`${fullProductName} - Ảnh ${i}`}
+                      // src={img.url}
+                      src="/loc-gio-dieu-hoa.jpg"
+                      alt={`${fullProductName} - Ảnh ${i + 1}`}
                       fill
                       className="object-cover"
                     />
@@ -173,7 +119,7 @@ export default function ProductDetailPage() {
           <div className="w-full lg:w-1/2">
             <div className="mb-2">
               <span className="inline-block px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg text-sm font-medium">
-                {product.brand}
+                {product.brand?.name}
               </span>
             </div>
 
@@ -194,7 +140,7 @@ export default function ProductDetailPage() {
             {/* Short Description */}
             <div className="mb-6">
               <p className="text-base text-secondary-600 leading-relaxed">
-                {productDetails.description}
+                {product.description}
               </p>
             </div>
             
@@ -202,10 +148,10 @@ export default function ProductDetailPage() {
             <div className="mb-6 p-4 bg-secondary-50 rounded-xl">
               <h3 className="font-medium text-secondary-900 mb-3 text-base">Tương thích với:</h3>
               <ul className="space-y-2">
-                {productDetails.compatibleVehicles.map((vehicle, index) => (
+                {product.compatibleModels.map((m, index) => (
                   <li key={index} className="text-base text-secondary-600 flex items-center">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary-500 mr-2"></span>
-                    {vehicle}
+                    {`${m.carModelName} ${m.years.join(", ")}`}
                   </li>
                 ))}
               </ul>
@@ -238,7 +184,20 @@ export default function ProductDetailPage() {
               </div>
               
               <div className="flex flex-col sm:flex-row gap-2">
-                <button className="flex-1 bg-white border-2 border-primary-500 text-primary-600 py-3 px-6 rounded-xl hover:bg-primary-50 transition-colors flex items-center justify-center gap-2 text-base font-medium">
+                <button
+                  onClick={() => {
+                    addItem({
+                      id: product._id,
+                      name: product.name,
+                      slug: product._id,
+                      image: product.images[0]?.url || "/loc-gio-dieu-hoa.jpg",
+                      price: product.price,
+                      brand: product.brand?.name,
+                    }, quantity);
+                    toast.success("Đã thêm vào giỏ hàng");
+                  }}
+                  className="flex-1 bg-white border-2 border-primary-500 text-primary-600 py-3 px-6 rounded-xl hover:bg-primary-50 transition-colors flex items-center justify-center gap-2 text-base font-medium"
+                >
                   <ShoppingCart className="h-5 w-5" />
                   Thêm vào giỏ hàng
                 </button>
@@ -304,18 +263,13 @@ export default function ProductDetailPage() {
             {activeTab === "description" && (
               <div className="prose max-w-none">
                 <p className="text-base text-secondary-600 leading-relaxed">
-                  {productDetails.description}
+                  {product.description}
                 </p>
                 <h3 className="text-lg font-medium text-secondary-900 mt-6 mb-3">
                   Tính năng nổi bật:
                 </h3>
                 <ul className="space-y-2">
-                  {productDetails.features.map((feature, index) => (
-                    <li key={index} className="text-base text-secondary-600 flex items-start">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary-500 mr-2 mt-1.5"></span>
-                      {feature}
-                    </li>
-                  ))}
+                  {/* TODO: hiển thị tính năng nếu backend hỗ trợ */}
                 </ul>
               </div>
             )}
@@ -324,13 +278,20 @@ export default function ProductDetailPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-base">
                   <tbody>
-                    {productDetails.specifications.map((spec, index) => (
+                    {[
+                      { name: "Mã sản phẩm", value: product.code },
+                      { name: "Xuất xứ", value: product.origin || "-" },
+                      { name: "Chất liệu", value: product.material || "-" },
+                      { name: "Kích thước", value: product.dimensions || "-" },
+                      { name: "Bảo hành", value: product.warranty || "-" },
+                      // { name: "Số lượng tồn", value: product.stock?.toString() || "-" },
+                    ].map((spec, index) => (
                       <tr key={index} className={index % 2 === 0 ? "bg-secondary-50" : ""}>
                         <th className="py-3 px-4 font-medium text-secondary-900 w-1/3 text-left">
                           {spec.name}
                         </th>
                         <td className="py-3 px-4 text-secondary-600">
-                          {spec.value}
+                          {spec.value || "-"}
                         </td>
                       </tr>
                     ))}
@@ -342,14 +303,14 @@ export default function ProductDetailPage() {
         </div>
         
         {/* Related Products */}
-        {relatedProducts.length > 0 && (
+        {related.length > 0 && (
           <div className="mt-12">
             <h2 className="text-xl font-semibold text-secondary-900 mb-4">
               Sản phẩm liên quan
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {relatedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {related.map((p) => (
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </div>
@@ -358,3 +319,37 @@ export default function ProductDetailPage() {
     </div>
   );
 } 
+
+export const getServerSideProps = async ({ params }: { params: { slug: string } }) => {
+  try {
+    const productRes = await api.get(`/products/${params.slug}`);
+    if (!productRes.data.success) {
+      return { props: { product: null, related: [] } };
+    }
+
+    const product: ProductDetail = productRes.data.data;
+
+    // Fetch related products by brand
+    let related: Product[] = [];
+    try {
+      const relatedRes = await api.get('/products', { params: { brand: product.brand._id, limit: 4 } });
+      if (relatedRes.data.success) {
+        related = relatedRes.data.data
+          .filter((p: any) => p._id !== product._id)
+          .map((p: any) => ({
+            id: p._id,
+            name: p.name,
+            slug: p._id,
+            image: p.images[0]?.url || '/loc-gio-dieu-hoa.jpg',
+            price: p.price,
+            sale: !!(p.salePrice && p.salePrice < p.price)
+          }));
+      }
+    } catch {}
+
+    return { props: { product, related } };
+  } catch (error) {
+    console.error('Failed to fetch product detail:', error);
+    return { props: { product: null, related: [] } };
+  }
+}; 

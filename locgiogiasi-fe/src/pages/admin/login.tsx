@@ -3,6 +3,7 @@ import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
+import api from '@/utils/api';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -63,29 +64,21 @@ export default function AdminLogin() {
     setIsLoading(true);
     setErrors({ ...errors, general: '' });
 
-    // Simulate API call
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await api.post('/admin/login', {
+        username: formData.username,
+        password: formData.password
+      });
 
-      // Demo credentials for testing (in a real app, this would be validated on the server)
-      if (formData.username === 'admin' && formData.password === 'password') {
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('admin_token', 'true');
-        }
-        // Success - redirect to admin dashboard
+      if (response.data.success) {
+        const token = response.data.data?.token || response.data.token;
+        localStorage.setItem('admin_token', token);
         router.push('/admin');
       } else {
-        // Failed login
-        setErrors({
-          ...errors,
-          general: 'Tên đăng nhập hoặc mật khẩu không đúng',
-        });
+        setErrors({ ...errors, general: response.data.message });
       }
-    } catch (error) {
-      setErrors({
-        ...errors,
-        general: 'Có lỗi xảy ra, vui lòng thử lại sau',
-      });
+    } catch (error: any) {
+      setErrors({ ...errors, general: error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại sau' });
     } finally {
       setIsLoading(false);
     }
@@ -103,6 +96,7 @@ export default function AdminLogin() {
             className="mx-auto"
           />
         </Link>
+        <h1 className="text-center text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</h1>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Đăng nhập Quản trị</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Vui lòng đăng nhập để truy cập vào hệ thống quản trị
@@ -243,10 +237,6 @@ export default function AdminLogin() {
                 Quay lại trang chủ
               </Link>
             </div>
-          </div>
-          
-          <div className="mt-6 text-center text-xs text-gray-500">
-            <p>© 2023 Lọc Gió Giá Sỉ. Tất cả quyền được bảo lưu.</p>
           </div>
         </div>
       </div>
