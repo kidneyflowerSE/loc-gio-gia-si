@@ -68,7 +68,7 @@ export default function ContactPage() {
             <img src="/logo.png" alt="Lọc Gió Giá Sỉ" className="h-14 w-auto mx-auto drop-shadow" />
           </div>
           <h1 className="text-4xl font-extrabold text-primary-700 mb-2 text-center tracking-tight">
-            Liên hệ với Lọc Gió Giá Sỉ
+            Liên hệ với AutoFilter Pro - Lọc gió ô tô chính hãng giá sỉ
           </h1>
           <p className="text-lg text-secondary-700 text-center max-w-xl mx-auto">
             Chúng tôi luôn sẵn sàng hỗ trợ bạn. Hãy gửi thông tin hoặc liên hệ trực tiếp qua các kênh bên dưới!

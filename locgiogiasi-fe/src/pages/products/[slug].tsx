@@ -62,16 +62,16 @@ export default function ProductDetailPage({ product, related }: PageProps) {
   const fullProductName = `${product.name} ${firstCarModel} ${yearsDisplay ? yearsDisplay : ""} (${product.code})`;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-white min-h-screen pt-6">
       {/* Breadcrumbs */}
       <div className="bg-secondary-50 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center text-sm text-secondary-600">
-            <Link href="/" className="hover:text-primary-600">Trang chủ</Link>
+            <Link href="/" className="hover:text-primary-600 underline">Trang chủ</Link>
             <span className="mx-2">/</span>
-            <Link href="/products" className="hover:text-primary-600">Sản phẩm</Link>
+            <Link href="/products" className="hover:text-primary-600 underline">Sản phẩm</Link>
             <span className="mx-2">/</span>
-            <span className="text-secondary-900">{product.name}</span>
+            <span className="text-primary-600">{product.name}</span>
           </div>
         </div>
       </div>
