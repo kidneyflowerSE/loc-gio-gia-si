@@ -25,7 +25,9 @@ interface Props {
 export default function ProductCard({ product }: Props) {
   const [imageLoading, setImageLoading] = useState(true);
   const [showBuyNow, setShowBuyNow] = useState(false);
+  // const fullProductName = `${product.name} ${product.vehicle_type} ${product.year} (${product.product_code})`;
   const fullProductName = `${product.name} ${product.vehicle_type} ${product.year} (${product.product_code})`;
+
 
   const { addItem } = useCart();
 
@@ -43,12 +45,15 @@ export default function ProductCard({ product }: Props) {
   };
 
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-secondary-200 bg-white transition-all duration-300 hover:border-primary-200 hover:shadow-xl hover:shadow-primary-500/10 hover:-translate-y-1">
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-secondary-200 bg-white transition-all duration-300 hover:border-primary-200 hover:-translate-y-1">
       <Link 
         href={`/products/${product.slug}`} 
         className="relative aspect-[4/3] bg-secondary-50 overflow-hidden"
         aria-label={`Xem chi tiết ${fullProductName}`}
       >
+        <span className="absolute top-3 left-3 z-20 rounded-lg bg-primary-50 px-4 py-1 text-xs font-medium text-primary-600">
+          {product.brand}
+        </span>
         <div className={`
           absolute inset-0 bg-secondary-100 animate-pulse
           ${imageLoading ? 'opacity-100' : 'opacity-0'}
@@ -69,11 +74,6 @@ export default function ProductCard({ product }: Props) {
       </Link>
       
       <div className="flex flex-1 flex-col p-3 md:p-4">
-        <div className="mb-1.5 hidden lg:inline-flex absolute top-3 left-3">
-          <span className="rounded-lg bg-primary-50 px-4 py-1 text-xs font-medium text-primary-600">
-            {product.brand}
-          </span>
-        </div>
         
         <Link 
           href={`/products/${product.slug}`}

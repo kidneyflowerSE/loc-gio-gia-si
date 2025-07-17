@@ -5,23 +5,34 @@ import {
   ArrowDownRight, 
   ShoppingBag,
   PhoneCall,
-  CheckCircle,
-  Percent
+  CheckCircle
 } from "lucide-react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import api from '@/utils/api';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 // No local sample data – everything comes from API
 
 export default function AdminDashboard() {
   // Chart labels & data derived from API timeTrends
   const router = useRouter();
-  const [stats, setStats] = useState<any>(null);
+  const [ordersStats, setOrdersStats] = useState<any>(null);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const CACHE_KEY = 'admin_dashboard_stats';
+  const CACHE_KEY = 'admin_dashboard_stats_v2';
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   // Check if user is authenticated
@@ -36,12 +47,18 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await api.get('/statistics/orders');
-        if (response.data.success) {
-          setStats(response.data.data);
-          // cache with timestamp
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), data: response.data.data}));
+        const [ordersRes, dashRes] = await Promise.all([
+          api.get('/statistics/orders'),
+          api.get('/statistics/dashboard')
+        ]);
+        if (ordersRes.data.success) {
+          setOrdersStats(ordersRes.data.data);
         }
+        if (dashRes.data.success) {
+          setDashboardStats(dashRes.data.data);
+        }
+        // cache with timestamp
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), orders: ordersRes.data.data, dashboard: dashRes.data.data}));
       } catch (err: any) {
         setError(err.response?.data?.message || 'Error fetching stats');
       } finally {
@@ -59,7 +76,8 @@ export default function AdminDashboard() {
       try {
         const parsed = JSON.parse(cached);
         if (Date.now() - parsed.ts < CACHE_TTL) {
-          setStats(parsed.data);
+          setOrdersStats(parsed.orders);
+          setDashboardStats(parsed.dashboard);
           setLoading(false);
           return;
         }
@@ -89,17 +107,40 @@ export default function AdminDashboard() {
     );
   }
   if (error) return <AdminLayout><div className="p-6 text-red-600">Error: {error}</div></AdminLayout>;
-  if (!stats) return null;
+  if (!ordersStats || !dashboardStats) return null;
 
-  const overview = stats.overview;
-  const totalOrders = overview.totalOrders;
-  const totalContactedOrders = overview.contactedOrders;
-  const totalNewOrders = overview.notContactedOrders;
-  const contactRate = parseFloat(overview.contactRate);
+  const overview = ordersStats.summary || dashboardStats.orders || {};
+  const totalOrders = overview.total || overview.totalOrders || 0;
+  const totalContactedOrders = overview.contacted || overview.contactedOrders || 0;
+  const totalNewOrders = overview.notContacted || overview.notContactedOrders || 0;
+  const contactRate = totalOrders ? ((totalContactedOrders/totalOrders)*100).toFixed(1) : '0';
   
-  // Get chart data based on timeframe
-  const chartData = stats.timeTrends.data.map((item: any) => item.totalOrders);
-  const chartLabels = stats.timeTrends.data.map((item: any) => `${item._id.month}/${item._id.year}`);
+  const chartDataVals = ordersStats.trends?.map((item: any) => item.orders) || [];
+  const chartLabels = ordersStats.trends?.map((item: any) => item.period) || [];
+
+  const barData = {
+    labels: chartLabels,
+    datasets: [{
+      label: 'Tổng đơn',
+      data: chartDataVals,
+      backgroundColor: 'rgba(59, 130, 246, 0.6)'
+    }]
+  };
+  const barOptions = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx:any) => `${ctx.parsed.y.toLocaleString('vi-VN')} đơn`
+        }
+      }
+    },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: '#f3f4f6' }, ticks: { precision:0 } }
+    }
+  } as any;
   
   return (
     <AdminLayout>
@@ -155,33 +196,8 @@ export default function AdminDashboard() {
               </span>
             </div>
           </div>
-          <div className="relative h-72 w-full">
-            {/* Chart display */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-full h-48 relative">
-                {/* Bar Chart */}
-                <div className="flex justify-between items-end h-full">
-                  {chartData.map((value: number, index: number) => (
-                    <div key={index} className="flex flex-col items-center">
-                      <div 
-                        className="w-16 bg-primary-500/80 hover:bg-primary-600 transition-all rounded-t-md" 
-                        style={{height: `${(value / Math.max(...chartData)) * 100}%`}}
-                      ></div>
-                      <div className="flex flex-col items-center">
-                        <span className="text-xs text-gray-500 mt-2">{chartLabels[index]}</span>
-                        <span className="text-sm font-medium text-gray-700">{value}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Horizontal lines */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                  {[0, 1, 2, 3].map((_, index) => (
-                    <div key={index} className="border-t border-gray-100 w-full h-0"></div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="h-72">
+            <Bar data={barData} options={barOptions} />
           </div>
         </div>
 
@@ -257,7 +273,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {stats.recentOrders.map((order: any) => (
+              {ordersStats.recentOrders?.map((order: any) => (
                 <tr key={order._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600">{order.orderNumber}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{order.customer.name}</td>

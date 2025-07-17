@@ -8,6 +8,7 @@ import ProductGrid from "@/components/ProductGrid";
 import api from "@/utils/api";
 // No direct axios import, use api instance
 import { GetServerSideProps } from "next";
+import FilterBar from "@/components/FilterBar";
 
 
 interface HomePageProps {
@@ -45,7 +46,7 @@ export default function HomePage({ products }: HomePageProps) {
   }, []);
 
   return (
-      <div className="space-y-12">
+    <div className="space-y-12">
       {/* Hero Section */}
       <section className="relative -mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
        <Hero />
@@ -53,6 +54,8 @@ export default function HomePage({ products }: HomePageProps) {
         {/* Car Finder Form */}
         <SearchBar />
       </section>
+
+      {/* <FilterBar onSearch={() => {}} onFilter={() => {}}   /> */}
 
       {/* Products Preview Section */}
       <ProductGrid products={products} />
