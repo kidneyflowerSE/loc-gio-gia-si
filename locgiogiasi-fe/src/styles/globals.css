@@ -12,3 +12,14 @@ body {
 html, body {
   overflow-x: hidden;
 }
+
+/* Hide default increase/decrease arrows on number inputs to maintain layout */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}

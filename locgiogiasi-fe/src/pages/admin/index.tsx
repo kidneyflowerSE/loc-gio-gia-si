@@ -5,7 +5,8 @@ import {
   ArrowDownRight, 
   ShoppingBag,
   PhoneCall,
-  CheckCircle
+  CheckCircle,
+  Box
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -27,8 +28,8 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 export default function AdminDashboard() {
   // Chart labels & data derived from API timeTrends
   const router = useRouter();
-  const [ordersStats, setOrdersStats] = useState<any>(null);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [ordersStats, setOrdersStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -47,18 +48,24 @@ export default function AdminDashboard() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const [ordersRes, dashRes] = await Promise.all([
-          api.get('/statistics/orders'),
-          api.get('/statistics/dashboard')
+        const [dashRes, ordersRes] = await Promise.all([
+          api.get('/statistics/dashboard'),
+          api.get('/statistics/orders')
         ]);
-        if (ordersRes.data.success) {
-          setOrdersStats(ordersRes.data.data);
-        }
         if (dashRes.data.success) {
           setDashboardStats(dashRes.data.data);
         }
-        // cache with timestamp
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ts: Date.now(), orders: ordersRes.data.data, dashboard: dashRes.data.data}));
+        if (ordersRes.data.success) {
+          setOrdersStats(ordersRes.data.data);
+        }
+        sessionStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            ts: Date.now(),
+            dashboard: dashRes.data.data,
+            orders: ordersRes.data.data
+          })
+        );
       } catch (err: any) {
         setError(err.response?.data?.message || 'Error fetching stats');
       } finally {
@@ -76,12 +83,12 @@ export default function AdminDashboard() {
       try {
         const parsed = JSON.parse(cached);
         if (Date.now() - parsed.ts < CACHE_TTL) {
-          setOrdersStats(parsed.orders);
           setDashboardStats(parsed.dashboard);
+          setOrdersStats(parsed.orders);
           setLoading(false);
           return;
         }
-      } catch { /* ignore parse error */ }
+      } catch {/* ignore parse error */}
     }
     fetchStats();
   }, [router]);
@@ -107,16 +114,31 @@ export default function AdminDashboard() {
     );
   }
   if (error) return <AdminLayout><div className="p-6 text-red-600">Error: {error}</div></AdminLayout>;
-  if (!ordersStats || !dashboardStats) return null;
+  if (!dashboardStats || !ordersStats) return null;
 
-  const overview = ordersStats.summary || dashboardStats.orders || {};
-  const totalOrders = overview.total || overview.totalOrders || 0;
-  const totalContactedOrders = overview.contacted || overview.contactedOrders || 0;
-  const totalNewOrders = overview.notContacted || overview.notContactedOrders || 0;
-  const contactRate = totalOrders ? ((totalContactedOrders/totalOrders)*100).toFixed(1) : '0';
+  // Extract overview orders
+  const overviewOrders = dashboardStats.overview?.orders ?? dashboardStats.orders ?? {};
+  const orderOverviewFallback = ordersStats.overview ?? ordersStats.summary ?? {};
+
+  const totalOrders = overviewOrders.total ?? orderOverviewFallback.totalOrders ?? orderOverviewFallback.total ?? 0;
+  const totalContactedOrders = overviewOrders.contacted ?? orderOverviewFallback.contactedOrders ?? orderOverviewFallback.contacted ?? 0;
+  const totalNewOrders = overviewOrders.notContacted ?? orderOverviewFallback.notContactedOrders ?? orderOverviewFallback.notContacted ?? 0;
+  const contactRate = overviewOrders.contactRate ?? orderOverviewFallback.contactRate ?? (totalOrders ? ((totalContactedOrders/totalOrders)*100).toFixed(1) : '0');
+  const productsTotal = dashboardStats.overview?.products?.total ?? dashboardStats.products?.total ?? 0;
   
-  const chartDataVals = ordersStats.trends?.map((item: any) => item.orders) || [];
-  const chartLabels = ordersStats.trends?.map((item: any) => item.period) || [];
+  // Prepare chart data from ordersStats timeTrends
+  const timeTrendData = ordersStats.timeTrends?.data ?? ordersStats.trends ?? [];
+  const chartLabels = timeTrendData.map((item: any) => {
+    const id = item._id || {};
+    if (id.month) {
+      return `${('0'+id.month).slice(-2)}/${id.year}`;
+    }
+    if (id.week) {
+      return `W${id.week}/${id.year}`;
+    }
+    return id.year?.toString() || '';
+  });
+  const chartDataVals = timeTrendData.map((item: any) => item.totalOrders || item.orders || 0);
 
   const barData = {
     labels: chartLabels,
@@ -172,10 +194,10 @@ export default function AdminDashboard() {
           color="bg-indigo-500"
         />
         <StatCard 
-          title="Tỉ lệ liên hệ" 
-          value={`${contactRate}%`}
+          title="Tổng sản phẩm" 
+          value={productsTotal}
           change={0}
-          icon={BarChart3}
+          icon={Box}
           color="bg-purple-500"
         />
         {/* Bạn có thể thêm card khác nếu cần */}
@@ -269,11 +291,11 @@ export default function AdminDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
+                {/* <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {ordersStats.recentOrders?.map((order: any) => (
+              { (dashboardStats.recentOrders ?? ordersStats.recentOrders ?? []).map((order: any) => (
                 <tr key={order._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600">{order.orderNumber}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{order.customer.name}</td>
@@ -284,9 +306,9 @@ export default function AdminDashboard() {
                       {order.status === 'contacted' ? 'Đã liên hệ' : 'Chưa liên hệ'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800 text-right">
                     {order.totalAmount ? order.totalAmount.toLocaleString('vi-VN') + '₫' : '-'}
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>
