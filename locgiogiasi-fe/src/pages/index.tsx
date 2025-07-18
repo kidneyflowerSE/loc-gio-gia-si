@@ -46,7 +46,7 @@ export default function HomePage({ products }: HomePageProps) {
   }, []);
 
   return (
-    <div className="space-y-12">
+      <div className="space-y-12">
       {/* Hero Section */}
       <section className="relative -mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
        <Hero />

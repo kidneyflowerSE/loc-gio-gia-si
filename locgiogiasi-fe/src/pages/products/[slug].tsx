@@ -170,6 +170,7 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                   <input 
                     type="number" 
                     value={quantity} 
+                    min={1}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     className="w-16 text-center border-none text-base focus:outline-none focus:ring-0"
                   />

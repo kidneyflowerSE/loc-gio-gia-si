@@ -29,7 +29,6 @@ interface Props {
   post: BlogDetail | null;
   related: RelatedPost[];
 }
-
 export default function BlogDetailPage({ post, related }: Props) {
   if (!post) {
     return (
