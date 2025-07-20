@@ -86,16 +86,12 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
     <aside className="h-screen sticky top-0 w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm">
       {/* Header */}
       <div className="px-5 py-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</h1>
 
-        <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-            <Image src="/logo.png" width={30} height={30} alt="Logo" className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="font-bold text-lg text-gray-800">{adminName}</p>
-            <p className="text-xs text-gray-500">Quản trị viên</p>
-          </div>
+        <Link href="/admin" onClick={onNavigate} className="flex items-center justify-center flex-col gap-2">
+         
+            <Image src="/logo.png" width={30} height={30} alt="Logo" className="w-10 h-10" />
+         
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</h1>
         </Link>
       </div>
       

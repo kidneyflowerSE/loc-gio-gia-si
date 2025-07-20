@@ -96,7 +96,7 @@ export default function AdminDashboard() {
   // Skeleton cards
   if (loading) {
     return (
-      <AdminLayout>
+      <AdminLayout title="Bảng điều khiển | AutoFilter Pro">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800">Bảng điều khiển</h1>
         </div>
@@ -113,7 +113,7 @@ export default function AdminDashboard() {
       </AdminLayout>
     );
   }
-  if (error) return <AdminLayout><div className="p-6 text-red-600">Error: {error}</div></AdminLayout>;
+  if (error) return <AdminLayout title="Bảng điều khiển | AutoFilter Pro"><div className="p-6 text-red-600">Error: {error}</div></AdminLayout>;
   if (!dashboardStats || !ordersStats) return null;
 
   // Extract overview orders
@@ -165,7 +165,7 @@ export default function AdminDashboard() {
   } as any;
   
   return (
-    <AdminLayout>
+    <AdminLayout title="Bảng điều khiển | AutoFilter Pro">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-800">Bảng điều khiển</h1>
       </div>

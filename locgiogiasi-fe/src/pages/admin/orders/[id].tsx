@@ -9,7 +9,7 @@ const statusBadge = (status: string) => {
   const Icon = status === 'contacted' ? CheckCircle : PhoneCall;
   const label = status === 'contacted' ? 'Đã liên hệ' : 'Chưa liên hệ';
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${style}`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${style}`}>
       <Icon className="w-3.5 h-3.5" />
       {label}
     </span>
@@ -41,24 +41,30 @@ export default function OrderDetail() {
     fetchOrder();
   }, [id]);
 
-  if (loading) return <AdminLayout><div className="p-8">Đang tải...</div></AdminLayout>;
-  if (error) return <AdminLayout><div className="p-8 text-red-600">{error}</div></AdminLayout>;
+  if (loading) return (
+    <AdminLayout title="Chi tiết đơn hàng | AutoFilter Pro">
+      <div className="p-8">Đang tải...</div>
+    </AdminLayout>
+  );
+  if (error) return <AdminLayout title="Chi tiết đơn hàng | AutoFilter Pro"><div className="p-6 text-red-600">{error}</div></AdminLayout>;
   if (!order) return null;
 
   return (
-    <AdminLayout>
-      <div className="p-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Đơn hàng {order.orderNumber}</h1>
-          {statusBadge(order.status)}
-        </div>
+    <AdminLayout title={`Chi tiết đơn hàng | AutoFilter Pro`}>
+      <div className="md:p-8 space-y-6">
+        
         <button onClick={() => router.push('/admin/orders')} className="inline-flex items-center gap-2 text-sm text-primary-600 hover:text-primary-800">
           <ArrowLeft size={18} />
           Quay lại danh sách
         </button>
 
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-800">Đơn hàng {order.orderNumber}</h1>
+          {statusBadge(order.status)}
+        </div>
+
         {/* Customer info */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Thông tin khách hàng</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
             <div><span className="font-medium">Tên:</span> {order.customer.name}</div>
@@ -69,36 +75,42 @@ export default function OrderDetail() {
         </div>
 
         {/* Items table */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Sản phẩm</h2>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase">Tên sản phẩm</th>
-                  <th className="px-4 py-2 text-center font-medium text-gray-500 uppercase">Số lượng</th>
-                  <th className="px-4 py-2 text-right font-medium text-gray-500 uppercase">Giá</th>
+                  <th className="px-4 py-2 text-left text-xs md:text-base font-medium text-gray-500 uppercase">Tên sản phẩm</th>
+                  <th className="px-4 py-2 text-center text-xs md:text-base font-medium text-gray-500 uppercase">Số lượng</th>
+                  <th className="px-4 py-2 text-right text-xs md:text-base font-medium text-gray-500 uppercase">Giá</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {order.items.map((it: any) => (
-                  <tr key={it._id}>
-                    <td className="px-4 py-3 text-gray-800">{it.product.name}</td>
-                    <td className="px-4 py-3 text-center">{it.quantity}</td>
-                    <td className="px-4 py-3 text-right">{it.price.toLocaleString('vi-VN')}₫</td>
-                  </tr>
-                ))}
+                {order.items.map((it: any) => {
+                  const product = it.product;
+                  const firstModel = product.compatibleModels?.[0];
+                  const fullProductName = `${product.name || ''} ${firstModel?.carModelName || ''}  (${product.code || ''})`;
+                  
+                  return (
+                    <tr key={it._id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-gray-800 text-sm md:text-base">{fullProductName}</td>
+                      <td className="px-4 py-3 text-center text-sm md:text-base">{it.quantity}</td>
+                      <td className="px-4 py-3 text-right text-sm md:text-base">{it.price.toLocaleString('vi-VN')}₫</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          <div className="text-right mt-4 text-lg font-semibold text-gray-800">
+          <div className="text-right mt-4 text-md md:text-lg font-semibold text-gray-800">
             Tổng tiền: {order.totalAmount.toLocaleString('vi-VN')}₫
           </div>
         </div>
 
         {/* Notes */}
         {order.notes && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 shadow">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6 shadow">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Ghi chú</h2>
             <p className="text-sm text-gray-700 whitespace-pre-line">{order.notes}</p>
           </div>
