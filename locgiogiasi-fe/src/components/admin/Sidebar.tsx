@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { BarChart2, ShoppingBag, Package, Book, LogOut, ChevronDown } from "lucide-react";
+import { BarChart2, ShoppingBag, Package, Book, ChevronDown } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import api from "@/utils/api";
@@ -28,14 +28,18 @@ const navItems: NavItem[] = [
 
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  /** Called after a navigation click (useful for closing mobile sidebar) */
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const router = useRouter();
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   // Initialize with a static value so that the content rendered on the server
   // is identical to the first paint on the client. We then update the value
   // after the component has mounted on the client side.
   const [adminName, setAdminName] = useState<string>('admin');
-  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   // Read from localStorage and (if needed) fetch fresh profile information once
   // the component has mounted on the client. This prevents mismatches between
@@ -84,7 +88,7 @@ export default function Sidebar() {
       <div className="px-5 py-4 border-b border-gray-200">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-lime-500 bg-clip-text text-transparent">AutoFilter Pro</h1>
 
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link href="/admin" onClick={onNavigate} className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
             <Image src="/logo.png" width={30} height={30} alt="Logo" className="w-6 h-6" />
           </div>
@@ -130,6 +134,7 @@ export default function Sidebar() {
                             <li key={child.href}>
                               <Link
                                 href={child.href}
+                                onClick={onNavigate}
                                 className={`block py-2 px-3 text-sm rounded-lg ${
                                   childActive
                                     ? 'text-primary-700 bg-primary-50 font-medium'
@@ -147,6 +152,7 @@ export default function Sidebar() {
                 ) : (
                   <Link
                     href={href}
+                    onClick={onNavigate}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                       active 
                         ? 'bg-primary-50 text-primary-700 font-medium' 
@@ -168,46 +174,11 @@ export default function Sidebar() {
       
       {/* Footer */}
       <div className="mt-auto border-t border-gray-200 p-4">
-        <Link href="/" className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        <Link href="/" onClick={onNavigate} className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
           <span>Về trang chủ</span>
           <span className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">WEBSITE</span>
         </Link>
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className="w-full mt-2 flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <LogOut className="w-5 h-5" />
-            <span>Đăng xuất</span>
-          </div>
-        </button>
       </div>
-      {showLogoutModal && typeof window !== 'undefined' && ReactDOM.createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-lg w-80 p-6 animate-fade-in">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Xác nhận đăng xuất</h3>
-            <p className="text-sm text-gray-600 mb-6">Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?</p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 rounded-md text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none"
-              >
-                Huỷ
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.removeItem('admin_token');
-                  router.push('/admin/login');
-                }}
-                className="px-4 py-2 rounded-md text-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </aside>
   );
 } 

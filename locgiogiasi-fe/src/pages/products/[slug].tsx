@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
 import ProductCard, { Product } from "@/components/ProductCard";
-import { ShoppingCart, Zap } from "lucide-react";
+import { PhoneCall, ShoppingCart, Zap } from "lucide-react";
 
 import api from "@/utils/api";
 import { useCart } from "@/context/CartContext";
@@ -62,16 +62,16 @@ export default function ProductDetailPage({ product, related }: PageProps) {
   const fullProductName = `${product.name} ${firstCarModel} ${yearsDisplay ? yearsDisplay : ""} (${product.code})`;
 
   return (
-    <div className="bg-white min-h-screen pt-6">
+    <div className="bg-white min-h-screen">
       {/* Breadcrumbs */}
       <div className="bg-secondary-50 py-3">
         <div className="container mx-auto px-4">
           <div className="flex items-center text-sm text-secondary-600">
-            <Link href="/" className="hover:text-primary-600 underline">Trang chủ</Link>
-            <span className="mx-2">/</span>
-            <Link href="/products" className="hover:text-primary-600 underline">Sản phẩm</Link>
-            <span className="mx-2">/</span>
-            <span className="text-primary-600">{product.name}</span>
+            <Link href="/" className="hover:text-primary-600 underline flex-shrink-0">Trang chủ</Link>
+            <span className="mx-2 flex-shrink-0">/</span>
+            <Link href="/products" className="hover:text-primary-600 underline flex-shrink-0">Sản phẩm</Link>
+            <span className="mx-2 flex-shrink-0">/</span>
+            <span className="text-primary-600 truncate">{product.name}</span>
           </div>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function ProductDetailPage({ product, related }: PageProps) {
             {/* Price */}
             <div className="mb-6">
               <div className="flex items-baseline">
-                <span className="text-3xl font-bold text-secondary-900 tabular-nums">
+                <span className="text-3xl font-bold text-red-500 tabular-nums">
                   {product.price.toLocaleString("vi-VN")}
                   <span className="ml-1 text-xl">₫</span>
                 </span>
@@ -194,6 +194,9 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                       image: product.images[0]?.url || "/loc-gio-dieu-hoa.jpg",
                       price: product.price,
                       brand: product.brand?.name,
+                      vehicle_type: product.compatibleModels[0]?.carModelName || "",
+                      product_code: product.code,
+                      year: parseInt(product.compatibleModels[0]?.years?.[0] || '0'),
                     }, quantity);
                     toast.success("Đã thêm vào giỏ hàng");
                   }}
@@ -202,9 +205,13 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                   <ShoppingCart className="h-5 w-5" />
                   Thêm vào giỏ hàng
                 </button>
-                <button className="flex-1 bg-primary-600 text-white py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-base font-medium shadow-lg shadow-primary-500/20">
+                <button className="flex-1 hidden md:flex bg-primary-600 text-white py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors items-center justify-center gap-2 text-base font-medium shadow-lg shadow-primary-500/20">
                   <Zap className="h-5 w-5" />
                   Mua ngay
+                </button>
+                <button className="flex-1 md:hidden bg-primary-600 text-white py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 text-base font-medium shadow-lg shadow-primary-500/20">
+                  <PhoneCall className="h-5 w-5" />
+                  Liên hệ ngay
                 </button>
               </div>
             </div>
@@ -266,12 +273,12 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                 <p className="text-base text-secondary-600 leading-relaxed">
                   {product.description}
                 </p>
-                <h3 className="text-lg font-medium text-secondary-900 mt-6 mb-3">
+                {/* <h3 className="text-lg font-medium text-secondary-900 mt-6 mb-3">
                   Tính năng nổi bật:
-                </h3>
-                <ul className="space-y-2">
-                  {/* TODO: hiển thị tính năng nếu backend hỗ trợ */}
-                </ul>
+                </h3> */}
+                    {/* <ul className="space-y-2">
+                      
+                    </ul> */}
               </div>
             )}
             
@@ -309,9 +316,9 @@ export default function ProductDetailPage({ product, related }: PageProps) {
             <h2 className="text-xl font-semibold text-secondary-900 mb-4">
               Sản phẩm liên quan
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {related.map((p) => (
-                <ProductCard key={p.id} product={p} />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {related.map((product) => (
+                <ProductCard key={product.id} product={product} />
               ))}
             </div>
           </div>
@@ -341,9 +348,12 @@ export const getServerSideProps = async ({ params }: { params: { slug: string } 
             id: p._id,
             name: p.name,
             slug: p._id,
-            image: p.images[0]?.url || '/loc-gio-dieu-hoa.jpg',
+            image: p.images?.[0]?.url || "/loc-gio-dieu-hoa.jpg",
             price: p.price,
-            sale: !!(p.salePrice && p.salePrice < p.price)
+            brand: p.brand?.name || "N/A",
+            vehicle_type: p.compatibleModels?.[0]?.carModelName || "",
+            year: parseInt(p.compatibleModels?.[0]?.years?.[0] || new Date().getFullYear().toString()),
+            product_code: p.code || "",
           }));
       }
     } catch {}

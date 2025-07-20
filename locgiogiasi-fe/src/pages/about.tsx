@@ -4,9 +4,9 @@ import { Check, MessageCircle, Search, Star } from "lucide-react";
 
 export default function AboutPage() {
   const expert = {
-    name: "Nguyễn Văn A",
+    name: "Hoài Thanh",
     businessName: "Lọc Gió Giá Sỉ",
-    title: "Chuyên gia & Nhà sáng lập",
+    title: "Chủ doanh nghiệp",
     avatar: "/logo.png", // Thay bằng ảnh chân dung chuyên nghiệp
     headline: "Cung cấp lọc gió chất lượng cao, được tuyển chọn bởi chuyên gia.",
     bio: "Với kinh nghiệm nhiều năm trong ngành phụ tùng ô tô, tôi thành lập Lọc Gió Giá Sỉ với mục tiêu đơn giản: giúp bạn dễ dàng tiếp cận những sản phẩm tốt nhất với giá gốc, đi kèm sự tư vấn trung thực và tận tâm.",
@@ -73,7 +73,7 @@ export default function AboutPage() {
         {/* WHY CHOOSE ME */}
         <div className="bg-secondary-50 py-20">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-12">Tại Sao Chọn Tôi?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-secondary-900 mb-12">Tại Sao Chọn AutoFilter Pro ?</h2>
             <div className="grid md:grid-cols-3 gap-8">
               {whyChooseMe.map(reason => (
                 <div key={reason.title} className="p-8">

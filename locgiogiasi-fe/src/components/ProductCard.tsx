@@ -40,6 +40,8 @@ export default function ProductCard({ product }: Props) {
       price: product.price,
       brand: product.brand,
       year: product.year,
+      vehicle_type: product.vehicle_type,
+      product_code: product.product_code,
     });
     toast.success("Đã thêm vào giỏ hàng");
   };
@@ -51,7 +53,7 @@ export default function ProductCard({ product }: Props) {
         className="relative aspect-[4/3] bg-secondary-50 overflow-hidden"
         aria-label={`Xem chi tiết ${fullProductName}`}
       >
-        <span className="absolute top-3 left-3 z-20 rounded-lg bg-primary-50 px-4 py-1 text-xs font-medium text-primary-600">
+        <span className="absolute top-3 left-3 z-20 rounded-lg bg-primary-50 md:px-4 px-2 py-1 text-xs font-medium text-primary-600">
           {product.brand}
         </span>
         <div className={`
@@ -96,8 +98,8 @@ export default function ProductCard({ product }: Props) {
             className="group/cart inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary-500 bg-white px-3 py-3 text-xs font-medium text-primary-600 transition-all hover:bg-primary-50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
             aria-label="Thêm vào giỏ hàng"
           >
+            <span className="lg:hidden">Thêm vào giỏ</span>
             <ShoppingCart className="h-3.5 w-3.5 transition-transform group-hover/cart:scale-110" />
-            {/* <span>Thêm vào giỏ</span> */}
           </button>
           <button 
             className="group/buy hidden lg:inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3 py-3 text-xs font-medium text-white shadow-md shadow-primary-500/20 transition-all hover:bg-primary-700 active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary-500/20"

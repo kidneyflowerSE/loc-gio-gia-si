@@ -68,15 +68,12 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-
-
+    <div className="min-h-screen bg-secondary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         {cartItems.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
-              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="text-center py-16 bg-white rounded-xl shadow-soft border">
+            <div className="w-24 h-24 mx-auto mb-6 bg-secondary-100 rounded-full flex items-center justify-center">
+              <svg className="w-12 h-12 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             </div>
@@ -95,41 +92,44 @@ export default function CartPage() {
             <div className="lg:col-span-8">
               <div className="bg-white border border-secondary-200 rounded-xl shadow-soft">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-secondary-200 flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-4 border-b border-secondary-200 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-secondary-900">Sản phẩm</h2>
                   <span className="hidden md:block text-xs text-secondary-500 w-32 text-right">Thành tiền</span>
                 </div>
 
                 <ul className="divide-y divide-secondary-200">
-                  {cartItems.map((item) => (
-                    <li key={item.id} className="px-6 py-4 grid grid-cols-12 gap-4 md:gap-6 border-b last:border-none border-secondary-200">
+                  {cartItems.map((item) => {
+                    const fullProductName = `${item.name} ${item.vehicle_type || ''} ${item.year || ''} (${item.product_code || ''})`;
+                    return (
+                    <li key={item.id} className="px-4 sm:px-6 py-4 grid grid-cols-12 gap-4 md:gap-6">
                       {/* Image */}
                       <div className="col-span-3 md:col-span-2">
-                        <div className="aspect-square w-full overflow-hidden rounded-lg bg-secondary-100">
+                        <Link href={`/products/${item.slug}`} className="aspect-square w-full block overflow-hidden rounded-lg bg-secondary-100 group">
                           <Image
                             src={item.image}
                             alt={item.name}
                             width={96}
                             height={96}
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
                           />
-                        </div>
+                        </Link>
                       </div>
 
                       {/* Details & Quantity */}
                       <div className="col-span-9 md:col-span-7 flex flex-col gap-2 min-w-0">
-                        <h3 className="font-medium text-secondary-900 line-clamp-2">
-                          {item.name}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-3 text-xs text-secondary-500">
+                        <Link href={`/products/${item.slug}`} className="group">
+                          <h3 className="font-medium text-secondary-900 line-clamp-2 group-hover:text-primary-600 group-hover:underline transition-colors">
+                            {fullProductName}
+                          </h3>
+                        </Link>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-secondary-500">
                           <span>Hãng: {item.brand || '-'}</span>
                           <span>Năm: {item.year || '-'}</span>
-                          <span>Mã: {item.slug}</span>
                         </div>
 
-                        <div className="mt-1 flex flex-wrap items-center gap-4 text-sm">
+                        <div className="mt-auto flex flex-col sm:flex-row sm:items-center gap-4 text-sm">
                           {/* Quantity controls */}
-                          <div className="flex items-center gap-1 border border-secondary-300 rounded-lg overflow-hidden">
+                          <div className="flex items-center gap-1 border border-secondary-300 rounded-lg overflow-hidden self-start">
                             <button
                               type="button"
                               onClick={() => decreaseQty(item.id)}
@@ -156,7 +156,7 @@ export default function CartPage() {
                       </div>
 
                       {/* Price & Delete */}
-                      <div className="col-span-12 md:col-span-3 flex md:block items-end justify-between md:items-end text-right">
+                      <div className="col-span-12 md:col-span-3 flex md:block items-center justify-between md:items-start text-right">
                         <p className="font-semibold text-secondary-900 md:mb-4">
                           {(item.price * item.quantity).toLocaleString('vi-VN')} ₫
                         </p>
@@ -168,30 +168,28 @@ export default function CartPage() {
                               toast.success('Đã xoá sản phẩm');
                             }
                           }}
-                          className="mt-2 md:mt-0 inline-flex items-center justify-center gap-1.5 rounded-md bg-red-600 px-4 py-2 text-xs font-medium text-white shadow transition-colors hover:bg-red-700"
+                          className="mt-2 md:mt-0 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-50 py-2 px-3 text-xs font-medium text-red-600 transition-colors hover:bg-red-100"
                           aria-label="Xoá sản phẩm"
                         >
-                          Xoá
+                          <Trash className="h-3 w-3"/>
+                          <span className="hidden sm:inline">Xoá</span>
                         </button>
                       </div>
                     </li>
-                  ))}
+                  )})}
                 </ul>
               </div>
             </div>
 
-            {/* Order Summary */}
-            <div className="lg:col-span-4">
-              
-
-              {/* Customer Information Form */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="px-6 py-4 border-b border-gray-200">
-                  <h2 className="text-lg font-medium text-gray-900">Thông tin khách hàng</h2>
+            {/* Order Summary & Form */}
+            <div className="lg:col-span-4 mt-8 lg:mt-0">
+              <div className="bg-white rounded-xl shadow-soft border border-secondary-200 sticky top-24">
+                <div className="px-6 py-4 border-b border-secondary-200">
+                  <h2 className="text-lg font-semibold text-secondary-900">Thông tin khách hàng</h2>
                 </div>
-                <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
+                <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 mb-1.5">
                       Họ tên *
                     </label>
                     <input
@@ -200,13 +198,13 @@ export default function CartPage() {
                       required
                       value={customer.name}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-secondary-700 mb-1.5">
                         Số điện thoại *
                       </label>
                       <input
@@ -215,11 +213,11 @@ export default function CartPage() {
                         required
                         value={customer.phone}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-secondary-700 mb-1.5">
                         Email
                       </label>
                       <input
@@ -227,13 +225,13 @@ export default function CartPage() {
                         name="email"
                         value={customer.email}
                         onChange={handleChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 mb-1.5">
                       Địa chỉ giao hàng
                     </label>
                     <input
@@ -241,11 +239,11 @@ export default function CartPage() {
                       name="address"
                       value={customer.address}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 mb-1.5">
                       Tỉnh / Thành phố *
                     </label>
                     <input
@@ -254,12 +252,12 @@ export default function CartPage() {
                       required
                       value={customer.city}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-secondary-700 mb-1.5">
                       Ghi chú đơn hàng
                     </label>
                     <textarea
@@ -267,7 +265,7 @@ export default function CartPage() {
                       rows={3}
                       value={customer.note}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                      className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400 resize-none"
                     />
                   </div>
                   

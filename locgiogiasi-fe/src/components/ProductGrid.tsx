@@ -15,11 +15,11 @@ export default function ProductGrid({ products, title = "Tất cả sản phẩm
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center">
           <div className="bg-primary-600 w-1 h-6 mr-3" />
-          <h2 className="text-2xl font-bold text-secondary-900">{title}</h2>
+          <h2 className="text-xl lg:text-2xl font-bold text-secondary-900">{title}</h2>
         </div>
         <Link
           href="/products"
-          className="text-primary-600 hover:text-primary-700 font-medium"
+          className="text-primary-600 hover:text-primary-700 font-medium hidden lg:block"
         >
           Xem tất cả
         </Link>
@@ -36,7 +36,7 @@ export default function ProductGrid({ products, title = "Tất cả sản phẩm
       <div className="text-center mt-8">
         <Link
           href="/products"
-          className="inline-block bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors shadow-md"
+          className="inline-block bg-primary-600 text-white md:px-6 px-4 md:py-3 py-2 rounded-lg hover:bg-primary-700 transition-colors shadow-md"
         >
           Xem tất cả sản phẩm
         </Link>
