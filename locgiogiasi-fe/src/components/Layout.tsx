@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef, useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Header from "./Header";
@@ -10,6 +10,31 @@ interface Props {
 
 export default function Layout({ children }: Props) {
   const router = useRouter();
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.offsetHeight);
+      }
+    };
+
+    // Use ResizeObserver to detect when the header's size changes
+    const observer = new ResizeObserver(updateHeight);
+    if (headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    // Initial height measurement
+    updateHeight();
+
+    return () => {
+      if (headerRef.current) {
+        observer.unobserve(headerRef.current);
+      }
+    };
+  }, []);
 
   const routeTitleMap: Record<string, string> = {
     "/": "AutoFilter Pro | Lọc gió ô tô chính hãng giá sỉ",
@@ -33,8 +58,8 @@ export default function Layout({ children }: Props) {
       <Head>
         <title>{title}</title>
       </Head>
-      <Header />
-      <main className="flex-1 w-full bg-white mx-auto pt-20">
+      <Header ref={headerRef} />
+      <main className="flex-1 w-full bg-white mx-auto" style={{ paddingTop: `${headerHeight}px` }}>
         {children}
       </main>
       <Footer />

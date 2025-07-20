@@ -42,7 +42,7 @@ export default function BlogDetailPage({ post, related }: Props) {
   }
 
   return (
-    <div className="bg-white min-h-screen pt-6">
+    <div className="bg-white min-h-screen">
       <Head>
         <title>{post.title} | Blog</title>
         <meta name="description" content={post.excerpt} />

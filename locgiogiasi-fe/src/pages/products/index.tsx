@@ -4,7 +4,7 @@ import Link from "next/link";
 import ProductCard, { Product } from "@/components/ProductCard";
 import api from "@/utils/api";
 import { GetServerSideProps } from "next";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Filter, X } from "lucide-react";
 
 // Component for loading skeleton
 const ProductCardSkeleton = () => (
@@ -66,7 +66,7 @@ const FilterGroup = ({ title, children }: { title: string, children: React.React
 const FilterSelect = ({ value, onChange, children }: { value: string, onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void, children: React.ReactNode }) => (
   <div className="relative">
     <select
-      className="w-full border border-secondary-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300 appearance-none bg-white"
+      className="w-full border border-secondary-300 rounded-lg md:px-3 px-2 md:py-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-300 appearance-none bg-white"
       value={value}
       onChange={onChange}
     >
@@ -80,6 +80,7 @@ const FilterSelect = ({ value, onChange, children }: { value: string, onChange: 
 export default function ProductsPage({ products, pagination, brands }: ProductsPageProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [isFilterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     const handleStart = (url: string) => url !== router.asPath && setLoading(true);
@@ -133,108 +134,145 @@ export default function ProductsPage({ products, pagination, brands }: ProductsP
   };
 
   const selectedBrand = brands.find(b => b._id === currentFilters.brand);
+  
+  const FilterSidebar = () => (
+     <div className="bg-white rounded-lg shadow-card p-5">
+        <FilterGroup title="Hãng xe">
+          <FilterSelect value={currentFilters.brand} onChange={e => handleFilterChange("brand", e.target.value)}>
+            <option value="">Tất cả hãng xe</option>
+            {brands.map(brand => <option key={brand._id} value={brand._id}>{brand.name}</option>)}
+          </FilterSelect>
+        </FilterGroup>
+
+        {currentFilters.brand && (
+          <FilterGroup title="Dòng xe">
+            <FilterSelect value={currentFilters.carModel} onChange={e => handleFilterChange("carModel", e.target.value)}>
+              <option value="">Tất cả dòng xe</option>
+              {selectedBrand?.carModels.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
+            </FilterSelect>
+          </FilterGroup>
+        )}
+        
+        <FilterGroup title="Năm sản xuất">
+          <FilterSelect value={currentFilters.year} onChange={e => handleFilterChange("year", e.target.value)}>
+            <option value="">Tất cả các năm</option>
+            {Array.from({ length: 11 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}</option>)}
+          </FilterSelect>
+        </FilterGroup>
+
+        <FilterGroup title="Giá">
+          {priceRanges.map((range) => (
+            <div key={range.value} className="flex items-center">
+              <input type="radio" id={`price-${range.value}`} name="price" className="w-4 h-4 text-primary-600 focus:ring-primary-500"
+                checked={currentFilters.price === range.value} onChange={() => handleFilterChange("price", range.value)} />
+              <label htmlFor={`price-${range.value}`} className="ml-2 text-secondary-700">{range.label}</label>
+            </div>
+          ))}
+        </FilterGroup>
+
+        <div className="pt-5">
+          <button 
+            onClick={() => {
+              setFilterOpen(false);
+              router.push('/products');
+            }}
+            className="w-full text-center px-4 py-2 border border-secondary-300 rounded-lg text-sm text-secondary-700 hover:bg-secondary-100 transition-colors"
+          >
+            Xóa tất cả bộ lọc
+          </button>
+        </div>
+      </div>
+  );
+
 
   return (
     <div>
       <div className="bg-white">
         {/* Page Header */}
-        <div className="bg-secondary-50 py-8">
+        <div className="bg-secondary-50 py-4 lg:py-8">
           <div className="container mx-auto px-4">
-            <h1 className="text-3xl font-bold text-secondary-900 mb-2">Sản phẩm lọc gió ô tô</h1>
-            <div className="flex items-center text-sm text-secondary-600">
-              <Link href="/" className="hover:text-primary-600">Trang chủ</Link>
+            <h1 className="text-2xl lg:text-3xl font-bold text-secondary-900 mb-2 hidden lg:block">Sản phẩm lọc gió ô tô</h1>
+            <div className="flex items-center text-base text-secondary-600">
+              <Link href="/" className="hover:text-primary-600 underline">Trang chủ</Link>
               <span className="mx-2">/</span>
-              <span>Sản phẩm</span>
+              <span className="underline">Sản phẩm</span>
             </div>
           </div>
         </div>
 
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col lg:flex-row gap-8">
-            {/* Sidebar Filters */}
-            <aside className="w-full lg:w-1/4 xl:w-1/5">
-              <div className="bg-white rounded-lg shadow-card p-5 sticky top-24">
-                {/* <div className="pb-4 border-b border-secondary-200">
-                  <h3 className="font-semibold text-secondary-900 mb-3">Tìm kiếm</h3>
-                  <form onSubmit={(e) => { e.preventDefault(); handleFilterChange('search', (e.target as any).search.value); }}>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        name="search"
-                        placeholder="Tên hoặc mã sản phẩm..."
-                        defaultValue={currentFilters.search}
-                        className="w-full border border-secondary-300 rounded-lg pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-primary-300"
-                      />
-                      <button type="submit" className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-                      </button>
-                    </div>
-                  </form>
-                </div> */}
-
-                <FilterGroup title="Hãng xe">
-                  <FilterSelect value={currentFilters.brand} onChange={e => handleFilterChange("brand", e.target.value)}>
-                    <option value="">Tất cả hãng xe</option>
-                    {brands.map(brand => <option key={brand._id} value={brand._id}>{brand.name}</option>)}
-                  </FilterSelect>
-                </FilterGroup>
-
-                {currentFilters.brand && (
-                  <FilterGroup title="Dòng xe">
-                    <FilterSelect value={currentFilters.carModel} onChange={e => handleFilterChange("carModel", e.target.value)}>
-                      <option value="">Tất cả dòng xe</option>
-                      {selectedBrand?.carModels.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
-                    </FilterSelect>
-                  </FilterGroup>
-                )}
-                
-                <FilterGroup title="Năm sản xuất">
-                  <FilterSelect value={currentFilters.year} onChange={e => handleFilterChange("year", e.target.value)}>
-                    <option value="">Tất cả các năm</option>
-                    {Array.from({ length: 11 }, (_, i) => 2025 - i).map(y => <option key={y} value={y}>{y}</option>)}
-                  </FilterSelect>
-                </FilterGroup>
-
-                <FilterGroup title="Giá">
-                  {priceRanges.map((range) => (
-                    <div key={range.value} className="flex items-center">
-                      <input type="radio" id={`price-${range.value}`} name="price" className="w-4 h-4 text-primary-600 focus:ring-primary-500"
-                        checked={currentFilters.price === range.value} onChange={() => handleFilterChange("price", range.value)} />
-                      <label htmlFor={`price-${range.value}`} className="ml-2 text-secondary-700">{range.label}</label>
-                    </div>
-                  ))}
-                </FilterGroup>
-
-                <div className="pt-5">
-                  <button 
-                    onClick={() => router.push('/products')}
-                    className="w-full text-center px-4 py-2 border border-secondary-300 rounded-lg text-sm text-secondary-700 hover:bg-secondary-100 transition-colors"
-                  >
-                    Xóa tất cả bộ lọc
-                  </button>
-                </div>
-              </div>
+            {/* Sidebar Filters - Desktop */}
+            <aside className="hidden lg:block w-full lg:w-1/4 xl:w-1/5 sticky top-24 self-start">
+               <FilterSidebar />
             </aside>
+            
+            {/* Mobile Filter Panel */}
+            <div
+              className={`fixed inset-0 z-50 lg:hidden transition-opacity duration-300 ease-in-out ${
+                isFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+              aria-modal="true"
+              onClick={() => setFilterOpen(false)}
+            >
+              <div className="fixed inset-0 bg-black/40" aria-hidden="true"></div>
+              <div
+                className={`relative z-10 flex flex-col w-full max-w-xs h-full bg-secondary-50 shadow-xl transition-transform duration-300 ease-in-out ${
+                  isFilterOpen ? 'translate-x-0' : '-translate-x-full'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                  <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
+                     <h3 className="text-lg font-semibold">Bộ lọc</h3>
+                    <button
+                      type="button"
+                      className="-m-2 p-2 rounded-md text-gray-500 hover:text-gray-600 hover:bg-gray-100"
+                      onClick={() => setFilterOpen(false)}
+                    >
+                      <span className="sr-only">Đóng</span>
+                      <X className="h-6 w-6" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="overflow-y-auto">
+                    <FilterSidebar />
+                  </div>
+              </div>
+            </div>
+
 
             {/* Products Grid */}
             <main className="w-full lg:w-3/4 xl:w-4/5">
               {/* Toolbar */}
-              <div className="bg-white rounded-lg border border-secondary-200 p-4 mb-6 flex justify-between items-center">
-                <p className="text-secondary-600 text-sm">
-                  Hiển thị <span className="font-semibold text-secondary-900">{(pagination.page - 1) * pagination.limit + 1}-{(pagination.page - 1) * pagination.limit + products.length}</span> trên <span className="font-semibold text-secondary-900">{pagination.total}</span> sản phẩm
-                </p>
-                <div className="flex items-center gap-2">
-                  <span className="text-secondary-600 text-sm">Sắp xếp:</span>
-                  <FilterSelect
-                    value={currentFilters.sort}
-                    onChange={(e) => handleFilterChange("sort", e.target.value)}
-                  >
-                    {sortOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </FilterSelect>
-                </div>
+              <div className="bg-white rounded-lg border border-secondary-200 md:p-4 p-2 mb-6 flex md:grid md:grid-cols-[1fr_auto_auto] items-center justify-between md:justify-start gap-4">
+                  {/* Col 1: Filter Button / Count */}
+                  <div className="flex items-center gap-4">
+                    <button className="md:hidden flex items-center gap-2 px-4 py-2 border rounded-lg" onClick={() => setFilterOpen(true)}>
+                      <Filter className="w-5 h-5" />
+                      <span className="md:font-medium text-sm md:text-base">Bộ lọc</span>
+                    </button>
+                    <p className="text-secondary-600 text-sm hidden md:block">
+                      Hiển thị <span className="font-semibold text-secondary-900">{(pagination.page - 1) * pagination.limit + 1}-{(pagination.page - 1) * pagination.limit + products.length}</span> trên <span className="font-semibold text-secondary-900">{pagination.total}</span> sản phẩm
+                    </p>
+                  </div>
+
+                  {/* Col 2: Sort Label (Desktop) */}
+                  <span className="hidden md:block text-secondary-600 text-sm justify-self-end">Sắp xếp:</span>
+                  
+                  {/* Col 3: Sort Select */}
+                  <div className="flex items-center gap-2">
+                      <span className="md:hidden text-secondary-600 text-sm">Sắp xếp:</span>
+                      <div className=" md:w-48">
+                        <FilterSelect
+                          value={currentFilters.sort}
+                          onChange={(e) => handleFilterChange("sort", e.target.value)}
+                        >
+                          {sortOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </FilterSelect>
+                      </div>
+                  </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
                 {loading 
                   ? Array.from({ length: 12 }).map((_, i) => <ProductCardSkeleton key={i} />)
                   : products.length > 0

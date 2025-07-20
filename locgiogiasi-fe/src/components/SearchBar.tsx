@@ -62,7 +62,7 @@ export default function SearchBar() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 -mt-16 md:-mt-20 relative z-10">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8  md:-mt-20 relative z-10">
       <div className="rounded-xl bg-white p-6 md:p-8 shadow-2xl shadow-secondary-900/10 border border-secondary-100">
         <h2 className="text-xl font-bold text-secondary-900 mb-6 text-center md:text-left">
           Tìm kiếm lọc gió phù hợp cho xe của bạn

@@ -9,6 +9,8 @@ export interface CartItem {
   quantity: number;
   brand?: string;
   year?: number;
+  vehicle_type?: string;
+  product_code?: string;
 }
 
 interface CartContextValue {
