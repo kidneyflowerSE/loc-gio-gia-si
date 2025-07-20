@@ -289,19 +289,58 @@ export default function ProductsPage({ products, pagination, brands }: ProductsP
               {/* Pagination */}
               {pagination.pages > 1 && (
                 <div className="flex justify-center mt-8">
-                  <nav className="flex items-center space-x-2">
-                    <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1}
-                      className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50">
+                  <nav className="flex items-center space-x-1 sm:space-x-2">
+                    <button 
+                      onClick={() => handlePageChange(pagination.page - 1)} 
+                      disabled={pagination.page === 1}
+                      className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50"
+                    >
                       Trước
                     </button>
-                    {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(pageNumber => (
-                      <button key={pageNumber} onClick={() => handlePageChange(pageNumber)}
-                        className={`px-4 py-2 leading-tight border rounded-lg ${pagination.page === pageNumber ? 'bg-primary-600 text-white border-primary-600' : 'text-secondary-500 bg-white border-secondary-300 hover:bg-secondary-100 hover:text-secondary-700'}`}>
-                        {pageNumber}
-                      </button>
-                    ))}
-                    <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.pages}
-                      className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50">
+                    
+                    {((): React.ReactNode => {
+                      const pageNumbers: (number | string)[] = [];
+                      const { page, pages } = pagination;
+                      
+                      if (pages <= 7) {
+                        for (let i = 1; i <= pages; i++) {
+                          pageNumbers.push(i);
+                        }
+                      } else {
+                        if (page <= 4) {
+                          pageNumbers.push(1, 2, 3, 4, 5, 'ellipsis', pages);
+                        } else if (page > pages - 4) {
+                          pageNumbers.push(1, 'ellipsis', pages - 4, pages - 3, pages - 2, pages - 1, pages);
+                        } else {
+                          pageNumbers.push(1, 'ellipsis', page - 1, page, page + 1, 'ellipsis_end', pages);
+                        }
+                      }
+
+                      return pageNumbers.map((p, index) => {
+                        if (typeof p === 'string') {
+                          return (
+                            <span key={`${p}-${index}`} className="px-4 py-2 leading-tight border rounded-lg text-secondary-500 bg-white border-secondary-300 hidden sm:inline-block">
+                              ...
+                            </span>
+                          );
+                        }
+                        return (
+                          <button 
+                            key={p} 
+                            onClick={() => handlePageChange(p)}
+                            className={`w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 leading-tight border rounded-lg hidden sm:flex items-center justify-center ${pagination.page === p ? 'bg-primary-600 text-white border-primary-600' : 'text-secondary-500 bg-white border-secondary-300 hover:bg-secondary-100 hover:text-secondary-700'}`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      });
+                    })()}
+
+                    <button 
+                      onClick={() => handlePageChange(pagination.page + 1)} 
+                      disabled={pagination.page === pagination.pages}
+                      className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50"
+                    >
                       Sau
                     </button>
                   </nav>

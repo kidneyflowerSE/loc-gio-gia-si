@@ -42,7 +42,7 @@ export default function BlogDetailPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
+      <AdminLayout title="Chi tiết blog | AutoFilter Pro">
         <div className="p-6 space-y-4">
           <div className="h-8 w-64 bg-gray-100 rounded animate-pulse" />
           <div className="h-96 bg-gray-100 rounded animate-pulse" />
@@ -50,11 +50,11 @@ export default function BlogDetailPage() {
       </AdminLayout>
     );
   }
-  if (error) return <AdminLayout><div className="p-6 text-red-600">{error}</div></AdminLayout>;
+  if (error) return <AdminLayout title="Chi tiết blog | AutoFilter Pro"><div className="p-6 text-red-600">{error}</div></AdminLayout>;
   if (!blog) return null;
 
   return (
-    <AdminLayout>
+    <AdminLayout title={`Chi tiết blog | AutoFilter Pro`}>
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         <button className="flex items-center text-sm text-primary-600 hover:text-primary-800" onClick={()=>router.back()}>
           <ArrowLeft className="w-4 h-4 mr-1"/> Quay lại

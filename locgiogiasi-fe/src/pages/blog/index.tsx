@@ -117,23 +117,61 @@ export default function BlogPage({ blogs, categories, pagination, currentCategor
         {pagination.totalPages > 1 && (
           <div className="flex justify-center mt-10">
             <nav className="flex items-center space-x-2">
-              <button onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={pagination.currentPage === 1}
-                className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50">
+              <button 
+                onClick={() => handlePageChange(pagination.currentPage - 1)} 
+                disabled={pagination.currentPage === 1}
+                className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50"
+              >
                 Trước
               </button>
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
-                <button key={page} onClick={() => handlePageChange(page)}
-                  className={`px-4 py-2 leading-tight border rounded-lg ${pagination.currentPage === page ? 'bg-primary-600 text-white border-primary-600' : 'text-secondary-500 bg-white border-secondary-300 hover:bg-secondary-100 hover:text-secondary-700'}`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={pagination.currentPage === pagination.totalPages}
-                className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50">
+              
+              {((): React.ReactNode => {
+                const pageNumbers: (number | string)[] = [];
+                const { currentPage, totalPages } = pagination;
+                
+                if (totalPages <= 7) { // Show all pages if 7 or less
+                  for (let i = 1; i <= totalPages; i++) {
+                    pageNumbers.push(i);
+                  }
+                } else {
+                  if (currentPage <= 4) {
+                    pageNumbers.push(1, 2, 3, 4, 5, 'ellipsis', totalPages);
+                  } else if (currentPage > totalPages - 4) {
+                    pageNumbers.push(1, 'ellipsis', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+                  } else {
+                    pageNumbers.push(1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis_end', totalPages);
+                  }
+                }
+
+                return pageNumbers.map((p, index) => {
+                  if (typeof p === 'string') {
+                    return (
+                      <span key={`${p}-${index}`} className="px-4 py-2 leading-tight border rounded-lg text-secondary-500 bg-white border-secondary-300 hidden sm:inline-block">
+                        ...
+                      </span>
+                    );
+                  }
+                  return (
+                    <button 
+                      key={p} 
+                      onClick={() => handlePageChange(p)}
+                      className={`px-4 py-2 leading-tight border rounded-lg hidden sm:inline-block ${pagination.currentPage === p ? 'bg-primary-600 text-white border-primary-600' : 'text-secondary-500 bg-white border-secondary-300 hover:bg-secondary-100 hover:text-secondary-700'}`}
+                    >
+                      {p}
+                    </button>
+                  );
+                });
+              })()}
+
+              <button 
+                onClick={() => handlePageChange(pagination.currentPage + 1)} 
+                disabled={pagination.currentPage === pagination.totalPages}
+                className="px-3 py-2 leading-tight text-secondary-500 bg-white border border-secondary-300 rounded-lg hover:bg-secondary-100 hover:text-secondary-700 disabled:opacity-50"
+              >
                 Sau
               </button>
             </nav>
-        </div>
+          </div>
         )}
       </div>
     </div>
