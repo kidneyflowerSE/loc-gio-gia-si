@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import api from "@/utils/api";
 import { ArrowLeft } from "lucide-react";
-
+import Image from "next/image";
 interface Blog {
   _id: string;
   title: string;
@@ -61,7 +61,7 @@ export default function BlogDetailPage() {
         </button>
         <h1 className="text-3xl font-bold text-gray-800">{blog.title}</h1>
         {blog.featuredImage && (
-          <img src={blog.featuredImage} alt={blog.title} className="w-full max-h-[400px] object-cover rounded" />
+          <Image   src={blog.featuredImage || "/logo.png"} alt={blog.title} width={1000} height={1000} className="w-full max-h-[400px] object-cover rounded" unoptimized />
         )}
         <div className="text-sm text-gray-500 space-x-3">
           <span>Tác giả: <span className="font-medium text-gray-700">{blog.author}</span></span>

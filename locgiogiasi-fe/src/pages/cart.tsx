@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import api from "@/utils/api";
+import Seo from "@/components/Seo";
 
 export default function CartPage() {
   const { items: cartItems, updateQuantity, removeItem } = useCart();
@@ -68,6 +69,13 @@ export default function CartPage() {
   };
 
   return (
+    <>
+      <Seo 
+        title="Giỏ hàng - AutoFilter Pro"
+        description="Xem và quản lý sản phẩm trong giỏ hàng của bạn."
+        url="https://locgiogiasi.com/cart"
+        image="/logo.png"
+      />
     <div className="min-h-screen bg-secondary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {cartItems.length === 0 ? (
@@ -106,11 +114,12 @@ export default function CartPage() {
                       <div className="col-span-3 md:col-span-2">
                         <Link href={`/products/${item.slug}`} className="aspect-square w-full block overflow-hidden rounded-lg bg-secondary-100 group">
                           <Image
-                            src={item.image}
+                            src={item.image || "/logo.png"}
                             alt={item.name}
                             width={96}
                             height={96}
                             className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                            unoptimized
                           />
                         </Link>
                       </div>
@@ -285,5 +294,6 @@ export default function CartPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

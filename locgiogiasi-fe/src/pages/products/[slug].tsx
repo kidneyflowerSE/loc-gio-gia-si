@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Seo from "@/components/Seo";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,6 +9,7 @@ import { PhoneCall, ShoppingCart, Zap } from "lucide-react";
 import api from "@/utils/api";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
+import BuyNowModal from "@/components/BuyNowModal";
 
 interface ProductDetail {
   _id: string;
@@ -36,7 +38,7 @@ export default function ProductDetailPage({ product, related }: PageProps) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const { addItem } = useCart();
-
+  const [showBuyNow, setShowBuyNow] = useState(false);
   if (!product) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
@@ -62,6 +64,13 @@ export default function ProductDetailPage({ product, related }: PageProps) {
   const fullProductName = `${product.name} ${firstCarModel} ${yearsDisplay ? yearsDisplay : ""} (${product.code})`;
 
   return (
+    <>
+      <Seo 
+        title={fullProductName}
+        description={product.description?.slice(0,150)}
+        url={`https://locgiogiasi.com/products/${product._id}`}
+        image={product.images[0]?.url}
+      />
     <div className="bg-white min-h-screen">
       {/* Breadcrumbs */}
       <div className="bg-secondary-50 py-3">
@@ -85,12 +94,12 @@ export default function ProductDetailPage({ product, related }: PageProps) {
               <div className="bg-white rounded-2xl overflow-hidden border border-secondary-200/60">
                 <div className="relative aspect-square">
                   <Image
-                    // src={product.images[0]?.url || "/loc-gio-dieu-hoa.jpg"}
-                    src="/loc-gio-dieu-hoa.jpg"
+                    src={product.images[0]?.url || "/logo.png"}
                     alt={fullProductName}
                     fill
                     className="object-cover"
                     priority
+                    unoptimized
                   />
                 </div>
               </div>
@@ -103,11 +112,11 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                     className="relative aspect-square bg-secondary-100 rounded-lg overflow-hidden cursor-pointer ring-2 ring-transparent hover:ring-primary-500 transition-all"
                   >
                     <Image
-                      // src={img.url}
-                      src="/loc-gio-dieu-hoa.jpg"
+                      src={img.url || "/logo.png"}                
                       alt={`${fullProductName} - Ảnh ${i + 1}`}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   </button>
                 ))}
@@ -191,7 +200,7 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                       id: product._id,
                       name: product.name,
                       slug: product._id,
-                      image: product.images[0]?.url || "/loc-gio-dieu-hoa.jpg",
+                      image: product.images[0]?.url || "/logo.png",
                       price: product.price,
                       brand: product.brand?.name,
                       vehicle_type: product.compatibleModels[0]?.carModelName || "",
@@ -205,7 +214,7 @@ export default function ProductDetailPage({ product, related }: PageProps) {
                   <ShoppingCart className="h-5 w-5" />
                   Thêm vào giỏ hàng
                 </button>
-                <button className="flex-1 hidden md:flex bg-primary-600 text-white py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors items-center justify-center gap-2 text-base font-medium shadow-lg shadow-primary-500/20">
+                <button className="flex-1 hidden md:flex bg-primary-600 text-white py-3 px-6 rounded-xl hover:bg-primary-700 transition-colors items-center justify-center gap-2 text-base font-medium shadow-lg shadow-primary-500/20" onClick={()=>setShowBuyNow(true)}>
                   <Zap className="h-5 w-5" />
                   Mua ngay
                 </button>
@@ -324,7 +333,25 @@ export default function ProductDetailPage({ product, related }: PageProps) {
           </div>
         )}
       </div>
+      {showBuyNow && (
+        <BuyNowModal 
+          product={{
+            id: product._id,
+            name: product.name,
+            slug: product._id,
+            image: product.images[0]?.url || '/logo.png',
+            price: product.price,
+            brand: product.brand?.name || 'N/A',
+            vehicle_type: product.compatibleModels[0]?.carModelName || '',
+            year: parseInt(product.compatibleModels[0]?.years?.[0] || '0'),
+            product_code: product.code,
+          }} 
+          open={showBuyNow} 
+          onClose={() => setShowBuyNow(false)} 
+        />
+      )}
     </div>
+    </>
   );
 } 
 
@@ -348,7 +375,7 @@ export const getServerSideProps = async ({ params }: { params: { slug: string } 
             id: p._id,
             name: p.name,
             slug: p._id,
-            image: p.images?.[0]?.url || "/loc-gio-dieu-hoa.jpg",
+            image: p.images?.[0]?.url || "/logo.png",
             price: p.price,
             brand: p.brand?.name || "N/A",
             vehicle_type: p.compatibleModels?.[0]?.carModelName || "",

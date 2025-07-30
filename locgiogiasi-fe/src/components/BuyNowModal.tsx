@@ -72,7 +72,7 @@ export default function BuyNowModal({ open, onClose, product }: BuyNowModalProps
           {/* Product summary */}
           <div className="flex gap-4">
             <div className="relative w-24 h-24 flex-shrink-0">
-              <Image src={product.image} alt={product.name} fill className="object-cover rounded" />
+              <Image src={product.image} alt={product.name} fill className="object-cover rounded" unoptimized />
             </div>
             <div className="flex-1">
               <h4 className="font-medium text-secondary-900 text-sm line-clamp-2">

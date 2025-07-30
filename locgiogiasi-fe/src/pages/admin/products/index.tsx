@@ -2,7 +2,7 @@ import AdminLayout from "@/components/admin/AdminLayout";
 import { Edit, Image as ImgIcon, MoreVertical, Plus, Search, Star, Trash2, Filter, Upload, X, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import api from "@/utils/api";
-
+import Image from "next/image";
 interface Product {
   _id: string;
   name: string;
@@ -334,11 +334,13 @@ export default function ProductsPage() {
               return (
                 <div key={product._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
                   <div className="relative pt-[75%] flex-shrink-0">
-                    <img 
-                      // src={product.images[0]?.url || "/loc-gio-dieu-hoa.jpg"} 
-                      src="/loc-gio-dieu-hoa.jpg"
+                    <Image 
+                      src={product.images[0]?.url || "/logo.png"} 
                       alt={product.name}
+                      width={1000}
+                      height={1000}
                       className="absolute inset-0 w-full h-full object-cover"
+                      unoptimized
                     />
                     <div className="absolute top-2 right-2">
                       
@@ -406,7 +408,7 @@ export default function ProductsPage() {
                       <td className="px-2 md:px-6 py-4">
                         <div className="flex items-center">
                           <div className="h-10 w-10 flex-shrink-0">
-                            <img className="h-10 w-10 rounded-md object-cover" src={product.images[0]?.url || "/loc-gio-dieu-hoa.jpg"} alt="" />
+                            <Image className="h-10 w-10 rounded-md object-cover" src={product.images[0]?.url || "/logo.png"} alt="" width={1000} height={1000} unoptimized />
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 line-clamp-2">{fullProductName}</div>

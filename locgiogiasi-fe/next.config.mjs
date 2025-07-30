@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['res.cloudinary.com'],
+    domains: ['res.cloudinary.com', 'down-vn.img.susercontent.com', 'imgur.com', 'i.imgur.com', 'afifilter.com.vn'],
   },
   eslint: {
     // Skip ESLint during production builds to prevent build failures due to lint errors

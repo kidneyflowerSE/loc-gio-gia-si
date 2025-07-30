@@ -74,6 +74,8 @@ export default function AdminLogin() {
       if (response.data.success) {
         const token = response.data.data?.token || response.data.token;
         localStorage.setItem('admin_token', token);
+        document.cookie = `admin_token=${token}; path=/; max-age=${24*60*60}`;
+        localStorage.setItem('admin_login_time', Date.now().toString());
         router.push('/admin');
       } else {
         setErrors({ ...errors, general: response.data.message });

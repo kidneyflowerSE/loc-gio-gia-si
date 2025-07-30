@@ -1,6 +1,7 @@
-import Head from "next/head";
+  
 import Image from "next/image";
 import { Check, MessageCircle, Search, Star } from "lucide-react";
+import Seo from "@/components/Seo";
 
 export default function AboutPage() {
   const expert = {
@@ -43,9 +44,12 @@ export default function AboutPage() {
 
   return (
     <>
-      <Head>
-        <title>Về Chuyên Gia | {expert.businessName}</title>
-      </Head>
+      <Seo 
+        title="Về chúng tôi - AutoFilter Pro"
+        description="Tìm hiểu về AutoFilter Pro, công ty phân phối lọc gió ô tô chính hãng giá sỉ."
+        url="https://locgiogiasi.com/about"
+        image="/logo.png"
+      />
 
       <div className="bg-white text-secondary-800 font-sans">
         {/* HERO */}
