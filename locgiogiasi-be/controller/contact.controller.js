@@ -1,6 +1,13 @@
 const nodemailer = require('nodemailer');
 const { validationResult } = require('express-validator');
 
+// Helper function to validate email
+const isValidEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+};
+
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -152,11 +159,17 @@ const sendContactNotification = async (contact) => {
     `
   };
 
-  // Send both emails
-  await Promise.all([
-    transporter.sendMail(customerEmail),
-    transporter.sendMail(adminEmail)
-  ]);
+  // Send emails - always send admin email, only send customer email if email is valid
+  const emailPromises = [transporter.sendMail(adminEmail)];
+  
+  // Only send customer email if email is valid
+  if (isValidEmail(contact.email)) {
+    emailPromises.push(transporter.sendMail(customerEmail));
+  } else {
+    console.log('Skipping customer email - invalid or missing email:', contact.email);
+  }
+  
+  await Promise.all(emailPromises);
 };
 
 module.exports = {

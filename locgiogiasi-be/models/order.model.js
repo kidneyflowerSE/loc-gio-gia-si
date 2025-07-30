@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
     },
     email: {
       type: String,
-      required: true,
+      required: false, // Changed to optional
       trim: true,
       lowercase: true
     },
@@ -25,12 +25,12 @@ const orderSchema = new mongoose.Schema({
     },
     address: {
       type: String,
-      required: true,
+      required: false, // Changed to optional
       trim: true
     },
     city: {
       type: String,
-      required: true,
+      required: false, // Changed to optional
       trim: true
     },
     district: {

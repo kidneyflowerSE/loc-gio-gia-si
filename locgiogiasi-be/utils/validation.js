@@ -59,6 +59,12 @@ const emailValidation = body('email')
   .normalizeEmail()
   .withMessage('Please provide a valid email address');
 
+const optionalEmailValidation = body('email')
+  .optional()
+  .isEmail()
+  .normalizeEmail()
+  .withMessage('Please provide a valid email address');
+
 const passwordValidation = body('password')
   .isLength({ min: 6 })
   .withMessage('Password must be at least 6 characters long');
@@ -113,6 +119,7 @@ module.exports = {
   validatePagination,
   handleValidationErrors,
   emailValidation,
+  optionalEmailValidation,
   passwordValidation,
   phoneValidation,
   nameValidation,

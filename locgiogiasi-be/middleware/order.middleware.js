@@ -11,7 +11,8 @@ const validateCustomerInfo = (req, res, next) => {
     });
   }
 
-  const requiredFields = ['name', 'email', 'phone', 'address', 'city'];
+  // Required fields (only name and phone are required now)
+  const requiredFields = ['name', 'phone'];
   const missingFields = requiredFields.filter(field => !customer[field]?.trim());
   
   if (missingFields.length > 0) {
@@ -21,14 +22,7 @@ const validateCustomerInfo = (req, res, next) => {
     });
   }
 
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(customer.email)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Invalid email format'
-    });
-  }
+  // Email validation removed - email is completely optional now
 
   // Validate phone format (basic validation)
   const phoneRegex = /^[\d\s\-\+\(\)]{10,}$/;

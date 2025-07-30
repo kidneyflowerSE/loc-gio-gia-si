@@ -8,10 +8,10 @@ const { validateCustomerInfo, validateOrderItems } = require('../middleware/orde
 // Validation rules for creating order
 const createOrderValidation = [
   body('customer.name').notEmpty().withMessage('Customer name is required'),
-  body('customer.email').isEmail().withMessage('Valid email is required'),
   body('customer.phone').notEmpty().withMessage('Phone number is required'),
-  body('customer.address').notEmpty().withMessage('Address is required'),
-  body('customer.city').notEmpty().withMessage('City is required'),
+  // Optional customer fields
+  body('customer.address').optional().trim(),
+  body('customer.city').optional().trim(),
   body('items').isArray({ min: 1 }).withMessage('Items array is required with at least one item'),
   body('items.*.productId').notEmpty().withMessage('Product ID is required for each item'),
   body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer for each item')

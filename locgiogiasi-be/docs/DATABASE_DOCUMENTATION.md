@@ -4,6 +4,18 @@
 
 Hệ thống sử dụng **MongoDB** làm cơ sở dữ liệu với **Mongoose** làm ODM (Object Document Mapper). Database được thiết kế để quản lý một cửa hàng bán lọc gió ô tô với các tính năng quản lý sản phẩm, đơn hàng, blog, và quản trị.
 
+### Cập nhật gần nhất (2025-07-30):
+- ✅ **Flexible Customer Schema**: Email, address, city không còn required trong Order model
+- ✅ **Contact Optimization**: Contact form chỉ yêu cầu name + phone
+- ✅ **Smart Email Integration**: Email automation thông minh, không gây lỗi khi thiếu email
+- ✅ **Phone-First Design**: Tối ưu cho business model đặt hàng qua điện thoại
+
+### Đặc điểm thiết kế:
+- **Flexible Data Entry**: Minimalist required fields để tăng conversion rate
+- **Smart Validation**: Validation thông minh, không chặn user unnecessarily  
+- **Email Automation**: Gửi email thông minh dựa trên dữ liệu có sẵn
+- **Phone-Centric**: Thiết kế ưu tiên số điện thoại làm primary contact method
+
 ## Kết nối Database
 
 **File:** `config/database.js`
@@ -135,12 +147,12 @@ const connectDatabase = async () => {
   orderNumber: String (required, unique),
   customer: {
     name: String (required),
-    email: String (required, lowercase),
+    email: String (optional, lowercase), // Đã thay đổi thành optional
     phone: String (required),
-    address: String (required),
-    city: String (required),
-    district: String,
-    ward: String
+    address: String (optional),          // Đã thay đổi thành optional
+    city: String (optional),             // Đã thay đổi thành optional
+    district: String (optional),
+    ward: String (optional)
   },
   items: [{
     product: ObjectId (ref: 'Product', required),
@@ -148,11 +160,18 @@ const connectDatabase = async () => {
     price: Number (required, min: 0)
   }],
   status: String (enum: ['contacted', 'not contacted'], default: 'not contacted'),
-  notes: String,
+  notes: String (optional),
+  paymentMethod: String (default: 'cash'),
   orderDate: Date (default: now),
   updatedAt: Date (default: now)
 }
 ```
+
+**Validation Rules:**
+- **Required fields**: `name`, `phone`, `items` (có ít nhất 1 sản phẩm)
+- **Optional fields**: `email`, `address`, `city`, `district`, `ward`, `notes`
+- **Email validation**: Chỉ kiểm tra format khi email được cung cấp
+- **Phone validation**: Regex pattern `/^[\d\s\-\+\(\)]{10,}$/`
 
 **Virtual Fields:**
 - `totalAmount`: Tổng giá trị đơn hàng (computed từ items)
@@ -163,7 +182,11 @@ const connectDatabase = async () => {
 - **Duplicate Prevention**: Retry logic để tránh trùng lặp orderNumber  
 - **Virtual Fields**: Được serialize trong JSON response
 - **Auto Timestamps**: Tự động cập nhật `updatedAt` khi save
-- **Email Integration**: Tự động gửi email xác nhận khi tạo đơn hàng mới
+- **Smart Email Integration**: 
+  - Luôn gửi email thông báo cho admin
+  - Chỉ gửi email xác nhận cho khách hàng khi email hợp lệ
+  - Không gây lỗi khi email không hợp lệ hoặc thiếu
+- **Flexible Customer Info**: Chỉ yêu cầu tên và số điện thoại, phù hợp cho đặt hàng qua điện thoại
 
 **Order Number Generation Logic:**
 ```javascript
@@ -173,6 +196,11 @@ const dateString = date.toISOString().slice(0, 10).replace(/-/g, '');
 const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
 orderNumber = `ORD-${dateString}-${random}`;
 ```
+
+**Email Template Features:**
+- **Customer Email**: Chỉ hiển thị thông tin có sẵn (conditional rendering)
+- **Admin Email**: Hiển thị "Không cung cấp" cho thông tin thiếu
+- **Error Handling**: Đơn hàng vẫn được tạo thành công ngay cả khi gửi email thất bại
 
 ### 5. Blog Model (`models/blog.model.js`)
 
@@ -217,24 +245,39 @@ orderNumber = `ORD-${dateString}-${random}`;
 
 ### 6. Contact Model (`models/contact.model.js`)
 
-**Mục đích:** Lưu trữ thông tin liên hệ
+**Mục đích:** Schema định nghĩa cho thông tin liên hệ (chưa được sử dụng)
 
 **Schema:**
 ```javascript
 {
   name: String (required),
-  email: String (required, lowercase),
-  phone: String,
-  subject: String (required),
-  message: String (required),
+  email: String (optional, lowercase), // Đã thay đổi thành optional
+  phone: String (required),
+  subject: String (optional),          // Đã thay đổi thành optional  
+  message: String (optional),          // Đã thay đổi thành optional
   createdAt: Date (default: now)
 }
 ```
 
+**Validation Rules:**
+- **Required fields**: `name`, `phone`
+- **Optional fields**: `email`, `subject`, `message`
+- **Email validation**: Chỉ kiểm tra format khi email được cung cấp
+
 **Lưu ý quan trọng:** 
 - Model này được định nghĩa nhưng **hiện tại hệ thống KHÔNG lưu thông tin liên hệ vào database**
 - Contact form chỉ gửi email thông báo đến admin qua nodemailer
+- Form liên hệ có thể hoạt động chỉ với tên và số điện thoại
+- **Smart Email Handling**: 
+  - Luôn gửi thông báo cho admin
+  - Chỉ gửi email xác nhận cho khách hàng khi email hợp lệ
+  - Không gây lỗi khi thiếu thông tin tùy chọn
 - Nếu muốn lưu trữ liên hệ vào DB, cần modify controller để save vào collection
+
+**Email Integration:**
+- **Admin Notification**: Luôn được gửi với đầy đủ thông tin
+- **Customer Confirmation**: Chỉ gửi khi có email hợp lệ
+- **Flexible Content**: Hỗ trợ thiếu subject hoặc message
 
 ### 7. Settings Model (`models/settings.model.js`)
 
@@ -454,9 +497,12 @@ router.get('/protected-route', authMiddleware, controller.method);
 **Mục đích:** Validate thông tin khách hàng trong order
 
 **Validation rules:**
-- Các field bắt buộc: `name`, `email`, `phone`, `address`, `city`
-- Email format validation
-- Phone number format validation (basic)
+- **Required fields**: `name`, `phone` (chỉ 2 trường bắt buộc)
+- **Optional fields**: `email`, `address`, `city`, `district`, `ward`
+- **Email validation**: Đã loại bỏ hoàn toàn - email hoàn toàn tùy chọn
+- **Phone validation**: Regex pattern `/^[\d\s\-\+\(\)]{10,}$/`
+
+**Flexible Design**: Phù hợp cho đặt hàng qua điện thoại, chỉ cần tên và số điện thoại
 
 #### validateOrderItems  
 **Mục đích:** Validate và enrich thông tin items trong order
