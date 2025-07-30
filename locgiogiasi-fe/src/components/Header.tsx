@@ -135,17 +135,17 @@ const Header = forwardRef<HTMLElement>((props, ref) => {
       <div className="hidden lg:flex items-center justify-between px-6 py-2 text-sm bg-primary-600 text-white">
         <div className="flex items-center gap-6">
           <span className="flex items-center gap-2">
-            <PhoneCall className="w-4 h-4" /> 0909&nbsp;090&nbsp;090
+            <PhoneCall className="w-4 h-4" /> 0345&nbsp;8888&nbsp;04
           </span>
-          <span className="flex items-center gap-2">
+          {/* <span className="flex items-center gap-2">
             <Mail className="w-4 h-4" /> locgiogiasi@gmail.com
-          </span>
+          </span> */}
           <span className="flex items-center gap-2">
-            <MapPin className="w-4 h-4" /> 123 Đường ABC, Quận XYZ, TP.HCM
+            <MapPin className="w-4 h-4" /> 704/9a Hương Lộ 2, Phường Bình Trị Đông, TP.Hồ Chí Minh
           </span>
         </div>
         <Link href="/contact" className="hover:text-white font-medium">
-          Liên hệ ngay
+          Hỗ trợ 24/24
         </Link>
       </div>
 

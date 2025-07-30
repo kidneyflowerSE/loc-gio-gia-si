@@ -37,26 +37,26 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: "Hotline",
-      content: "0123.456.789",
-      detail: "Hỗ trợ 8:00 - 17:00"
+      content: "0345 8888 04",
+      detail: "Hỗ trợ 24/24"
     },
     {
       icon: Mail,
       title: "Email",
-      content: "contact@locgiogiasi.vn",
-      detail: "Phản hồi trong 24h"
+      content: "locgiogiasi@gmail.com",
+      detail: "Phản hồi sớm nhất"
     },
     {
       icon: MapPin,
       title: "Địa chỉ",
-      content: "123 Đường ABC, Quận XYZ",
+      content: "704/9a Hương Lộ 2, Phường Bình Trị Đông, TP.Hồ Chí Minh",
       detail: "TP. Hồ Chí Minh"
     },
     {
       icon: Clock,
       title: "Giờ làm việc",
-      content: "Thứ 2 - Thứ 7",
-      detail: "8:00 - 17:00"
+      content: "24/24",
+      detail: "Hỗ trợ 24/24"
     }
   ];
 
@@ -75,11 +75,11 @@ export default function ContactPage() {
           <div className="mb-4">
             <img src="/logo.png" alt="Lọc Gió Giá Sỉ" className="h-14 w-auto mx-auto drop-shadow" />
           </div>
-          <h1 className="text-4xl font-extrabold text-primary-700 mb-2 text-center tracking-tight">
-            Liên hệ với AutoFilter Pro - Lọc gió ô tô chính hãng giá sỉ
+          <h1 className="text-4xl font-extrabold text-primary-600 mb-2 text-center tracking-tight">
+          Nhận Báo Giá Sỉ – Chiết Khấu Hấp Dẫn Cho Gara & Đại Lý
           </h1>
-          <p className="text-lg text-secondary-700 text-center max-w-xl mx-auto">
-            Chúng tôi luôn sẵn sàng hỗ trợ bạn. Hãy gửi thông tin hoặc liên hệ trực tiếp qua các kênh bên dưới!
+          <p className="text-lg text-secondary-700 text-center max-w-4xl mx-auto">
+          AutoFilter Pro đồng hành cùng gara và nhà phân phối trên toàn quốc. Giá tốt theo số lượng – hỗ trợ kỹ thuật, tư vấn mã lọc chính xác từng dòng xe. Đăng ký ngay để nhận bảng giá sỉ ưu đãi nhất!
           </p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function ContactPage() {
                   <div className="w-14 h-14 rounded-xl bg-primary-500/10 flex items-center justify-center mb-2 group-hover:bg-primary-500/20 transition-colors">
                     <item.icon className="w-7 h-7 text-primary-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-primary-700 mb-1">{item.title}</h3>
+                  <h3 className="text-lg font-semibold text-primary-600 mb-1">{item.title}</h3>
                   <p className="text-base font-bold text-secondary-900 mb-0.5">{item.content}</p>
                   <p className="text-base text-secondary-600">{item.detail}</p>
                 </div>
@@ -108,8 +108,8 @@ export default function ContactPage() {
           {/* Form liên hệ */}
           <div>
             <div className="bg-white rounded-2xl border border-secondary-200/60 shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-primary-700 mb-6 text-center">
-                Gửi tin nhắn cho chúng tôi
+              <h2 className="text-2xl font-bold text-primary-600 mb-6 text-center">
+                Liên hệ ngay
               </h2>
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
@@ -209,23 +209,7 @@ export default function ContactPage() {
               </form>
             </div>
           </div>
-        </div>
-
-        {/* Bản đồ */}
-        <div className="mt-14">
-          <h3 className="text-xl font-bold text-primary-700 mb-4 text-center">Địa chỉ cửa hàng</h3>
-          <div className="rounded-2xl border border-secondary-200/60 shadow aspect-[4/2] overflow-hidden bg-secondary-50">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.4241674197006!2d106.69141847465353!3d10.777669289362096!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f3a9d8d1bb3%3A0xc4eca1b17d27fc49!2zMTIzIMSQxrDhu51uZyBBQkMsIFF14bqtbiBYWVosIFRow6BuaCBwaOG7kSBI4buTIENow60gTWluaA!5e0!3m2!1svi!2s!4v1647327429124!5m2!1svi!2s"
-              width="100%"
-              height="100%"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </div>
-        </div>
+        </div>  
       </div>
     </div>
     </>
