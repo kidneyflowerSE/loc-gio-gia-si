@@ -3,6 +3,7 @@ import Link from "next/link";
 import { GetServerSideProps } from "next";
 import { useRouter } from "next/router";
 import api from "@/utils/api";
+import Seo from "@/components/Seo";
 
 interface Blog {
   _id: string;
@@ -44,6 +45,13 @@ export default function BlogPage({ blogs, categories, pagination, currentCategor
   };
 
   return (
+    <>
+      <Seo 
+        title="Blog - AutoFilter Pro"
+        description="Đọc các bài viết về lọc gió ô tô chính hãng giá sỉ."
+        url="https://locgiogiasi.com/blog"
+        image="/logo.png"
+      />
       <div className="bg-white">
         {/* Page Header */}
         <div className="bg-secondary-100 py-8">
@@ -82,7 +90,7 @@ export default function BlogPage({ blogs, categories, pagination, currentCategor
           {blogs.map((post) => (
             <div key={post._id} className="bg-white rounded-lg overflow-hidden shadow-card hover:shadow-lg transition-all">
                 <Link href={`/blog/${post.slug}`} className="block relative aspect-[16/9] bg-secondary-100">
-                <Image src={post.featuredImage || "/loc-gio-dieu-hoa.jpg"} alt={post.title} fill className="object-cover" />
+                <Image src={post.featuredImage || "/logo.png"} alt={post.title} fill className="object-cover" unoptimized />
                 </Link>
                 <div className="p-6">
                   <div className="flex items-center text-xs text-secondary-500 mb-2">
@@ -175,6 +183,7 @@ export default function BlogPage({ blogs, categories, pagination, currentCategor
         )}
       </div>
     </div>
+    </>
   );
 }
 
@@ -195,7 +204,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
       title: b.title,
       slug: b.slug,
       excerpt: b.excerpt || b.description?.slice(0, 120) || "",
-      featuredImage: b.featuredImage || "/loc-gio-dieu-hoa.jpg",
+      featuredImage: b.featuredImage || "/logo.png",
       publishDate: b.publishDate,
       category: b.category,
       author: b.author || "Admin",

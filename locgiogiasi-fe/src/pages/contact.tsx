@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Send } from "lucide-react";
 import api from "@/utils/api";
 import toast from "react-hot-toast";
+import Seo from "@/components/Seo";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
@@ -60,6 +61,13 @@ export default function ContactPage() {
   ];
 
   return (
+    <>
+      <Seo 
+        title="Liên hệ - AutoFilter Pro"
+        description="Liên hệ với AutoFilter Pro để được hỗ trợ và tư vấn về sản phẩm lọc gió ô tô chính hãng giá sỉ."
+        url="https://locgiogiasi.com/contact"
+        image="/logo.png"
+      />
     <div className="bg-white min-h-screen">
       {/* Header */}
       <div className="relative bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-14 mb-10">
@@ -220,5 +228,6 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
+    </>
   );
 } 

@@ -242,7 +242,7 @@ export default function OrdersPage() {
         </div>
         
         {/* Orders Table */}
-        <div className="bg-white rounded-xl border border-gray-200 flex-1 overflow-hidden relative">
+        <div className="bg-white rounded-xl border border-gray-200 flex-1 relative">
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className="bg-gray-50 border-b border-gray-200">

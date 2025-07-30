@@ -5,6 +5,7 @@ import ProductCard, { Product } from "@/components/ProductCard";
 import api from "@/utils/api";
 import { GetServerSideProps } from "next";
 import { ChevronDown, Filter, X } from "lucide-react";
+import Seo from "@/components/Seo";
 
 // Component for loading skeleton
 const ProductCardSkeleton = () => (
@@ -186,6 +187,13 @@ export default function ProductsPage({ products, pagination, brands }: ProductsP
 
 
   return (
+    <>
+      <Seo 
+        title="Sản phẩm lọc gió ô tô - AutoFilter Pro"
+        description="Xem danh sách sản phẩm lọc gió ô tô chính hãng giá sỉ, được phân loại theo hãng xe và dòng xe."
+        url="https://locgiogiasi.com/products"
+        image="/logo.png"
+      />
     <div>
       <div className="bg-white">
         {/* Page Header */}
@@ -351,6 +359,7 @@ export default function ProductsPage({ products, pagination, brands }: ProductsP
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -392,7 +401,7 @@ export const getServerSideProps: GetServerSideProps = async ({ query }) => {
       id: p._id,
       name: p.name,
       slug: p._id,
-      image: p.images?.[0]?.url || "/loc-gio-dieu-hoa.jpg",
+      image: p.images?.[0]?.url || "/logo.png",
       price: p.price,
       brand: p.brand?.name || "N/A",
       vehicle_type: p.compatibleModels?.[0]?.carModelName || "",

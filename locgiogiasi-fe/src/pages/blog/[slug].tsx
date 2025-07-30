@@ -1,5 +1,5 @@
 import { GetServerSideProps } from "next";
-import Head from "next/head";
+import Seo from "@/components/Seo";
 import Image from "next/image";
 import Link from "next/link";
 import api from "@/utils/api";
@@ -43,14 +43,16 @@ export default function BlogDetailPage({ post, related }: Props) {
 
   return (
     <div className="bg-white min-h-screen">
-      <Head>
-        <title>{post.title} | Blog</title>
-        <meta name="description" content={post.excerpt} />
-      </Head>
+      <Seo 
+        title={`${post.title} | Blog`}
+        description={post.excerpt}
+        url={`https://locgiogiasi.com/blog/${post.slug}`}
+        image={post.featuredImage}
+      />
 
       {/* Hero Image */}
       <div className="relative w-full aspect-[16/9] bg-secondary-100">
-        <Image src={post.featuredImage || "/loc-gio-dieu-hoa.jpg"} alt={post.title} fill className="object-cover" />
+        <Image src={post.featuredImage || "/logo.png"} alt={post.title} fill className="object-cover" unoptimized />
       </div>
 
       {/* Article Container */}
@@ -91,7 +93,7 @@ export default function BlogDetailPage({ post, related }: Props) {
               {related.map((rp) => (
                 <div key={rp._id} className="bg-white rounded-lg overflow-hidden shadow-card hover:shadow-lg transition-all">
                   <Link href={`/blog/${rp.slug}`} className="block relative aspect-[16/9] bg-secondary-100">
-                    <Image src={rp.featuredImage || "/loc-gio-dieu-hoa.jpg"} alt={rp.title} fill className="object-cover" />
+                    <Image src={rp.featuredImage || "/logo.png"} alt={rp.title} fill className="object-cover" unoptimized />
                   </Link>
                   <div className="p-6">
                     <div className="flex items-center text-xs text-secondary-500 mb-2">

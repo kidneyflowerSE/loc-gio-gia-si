@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import Seo from "@/components/Seo";
 import Image from "next/image";
 import Link from "next/link";
 import { Product } from "@/components/ProductCard";
@@ -30,7 +31,7 @@ export default function HomePage({ products }: HomePageProps) {
               id: b._id,
               title: b.title,
               slug: b.slug,
-              image: b.featuredImage || "/hero.jpg",
+              image: b.featuredImage || "/logo.png",
               category: b.category,
               date: new Date(b.publishDate).toLocaleDateString("vi-VN"),
               excerpt: b.content ? b.content.slice(0, 120) : "",
@@ -46,6 +47,13 @@ export default function HomePage({ products }: HomePageProps) {
   }, []);
 
   return (
+    <>
+      <Seo 
+        title="AutoFilter Pro - Lọc gió ô tô chính hãng, giá sỉ"
+        description="Chuyên cung cấp lọc gió động cơ, lọc gió điều hoà ô-tô cho mọi dòng xe. Sản phẩm chính hãng, giá sỉ, giao hàng toàn quốc."
+        url="https://locgiogiasi.com/"
+        image="/logo.png"
+      />
       <div className="space-y-12">
       {/* Hero Section */}
       <section className="relative -mt-8 -mx-4 sm:-mx-6 lg:-mx-8">
@@ -80,6 +88,7 @@ export default function HomePage({ products }: HomePageProps) {
                   alt={post.title}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               </Link>
               <div className="p-6">
@@ -118,6 +127,7 @@ export default function HomePage({ products }: HomePageProps) {
       </section>
       
     </div>
+    </>
   );
 }
 
@@ -128,7 +138,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
       id: p._id,
       name: p.name,
       slug: p._id,
-      image:  "/loc-gio-dieu-hoa.jpg",
+      image:  p.images?.[0]?.url || "/logo.png",
       price: p.price,
       brand: p.brand?.name || "",
       vehicle_type: p.compatibleModels?.[0]?.carModelName || "",

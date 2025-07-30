@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { useEffect } from "react";
 import api from "@/utils/api";
 import { useState } from "react";
-
+import Image from "next/image"; 
 interface BlogPost {
   _id: string;
   title: string;
@@ -271,7 +271,7 @@ export default function BlogManagementPage() {
                       <div className="flex md:items-center items-start">
                         {post.featuredImage ? (
                           <div className="flex-shrink-0 h-12 w-12 rounded-md bg-gray-200 overflow-hidden md:block hidden">
-                            <img src={post.featuredImage} alt={post.title} className="h-full w-full object-cover" />
+                            <Image src={post.featuredImage || "/logo.png"} alt={post.title} width={1000} height={1000} className="h-full w-full object-cover" unoptimized />
                           </div>
                         ) : (
                           <div className="flex-shrink-0 h-12 w-12 rounded-md bg-primary-100 items-center justify-center md:flex hidden">
