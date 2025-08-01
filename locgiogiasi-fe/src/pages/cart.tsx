@@ -34,8 +34,8 @@ export default function CartPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cartItems.length) return;
-    if (!customer.name || !customer.phone || !customer.address || !customer.city) {
-      toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
+    if (!customer.name || !customer.phone) {
+      toast.error("Vui lòng nhập họ tên và số điện thoại");
       setLoading(false);
       return;
     }
@@ -258,7 +258,6 @@ export default function CartPage() {
                     <input
                       type="text"
                       name="city"
-                      required
                       value={customer.city}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-secondary-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-primary-400"
