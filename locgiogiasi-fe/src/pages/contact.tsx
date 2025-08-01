@@ -14,8 +14,8 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.phone || !form.message) {
-      toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc");
+    if (!form.name || !form.phone) {
+      toast.error("Vui lòng nhập họ tên và số điện thoại");
       return;
     }
     try {
@@ -136,7 +136,6 @@ export default function ContactPage() {
                       type="email"
                       id="email"
                       name="email"
-                      required
                       value={form.email}
                       onChange={handleChange}
                       className="w-full rounded-xl border border-secondary-200 px-4 py-3 text-base text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-colors"
@@ -181,7 +180,6 @@ export default function ContactPage() {
                     id="message"
                     name="message"
                     rows={5}
-                    required
                     value={form.message}
                     onChange={handleChange}
                     className="w-full rounded-xl border border-secondary-200 px-4 py-3 text-base text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-colors resize-none"

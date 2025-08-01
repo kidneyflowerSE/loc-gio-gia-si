@@ -2,6 +2,7 @@ const Order = require('../models/order.model');
 const Product = require('../models/product.model');
 const nodemailer = require('nodemailer');
 const { validationResult } = require('express-validator');
+const { orderCustomerTemplate, orderAdminTemplate } = require('../utils/emailTemplates');
 
 // Helper function to validate email
 const isValidEmail = (email) => {
@@ -9,6 +10,9 @@ const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email.trim());
 };
+
+const BRAND_NAME = "AutoFilter Pro";
+
 
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
@@ -134,111 +138,16 @@ const sendOrderNotification = async (order) => {
   const customerEmail = {
     from: process.env.EMAIL_USER,
     to: order.customer.email,
-    subject: `Xác nhận đơn hàng #${order.orderNumber} - LocGioGiaSi`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #333;">Cảm ơn bạn đã gửi yêu cầu báo giá!</h2>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #007bff; margin-top: 0;">Thông tin đơn hàng #${order.orderNumber}</h3>
-          
-          <div style="margin-bottom: 20px;">
-            <strong>Thông tin khách hàng:</strong>
-            <p>Họ tên: ${order.customer.name}</p>
-            ${order.customer.email ? `<p>Email: ${order.customer.email}</p>` : ''}
-            <p>Số điện thoại: ${order.customer.phone}</p>
-            ${order.customer.address || order.customer.city ? 
-              `<p>Địa chỉ: ${[order.customer.address, order.customer.city].filter(Boolean).join(', ')}</p>` 
-              : ''
-            }
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <strong>Sản phẩm:</strong>
-            ${order.items.map(item => `
-              <div style="border-bottom: 1px solid #dee2e6; padding: 10px 0;">
-                <p><strong>${item.product.name}</strong></p>
-                <p>Mã sản phẩm: ${item.product.code}</p>
-                <p>Thương hiệu: ${item.product.brand ? item.product.brand.name : 'Chưa xác định'}</p>
-                ${item.product.compatibleModels && item.product.compatibleModels.length > 0 ? 
-                  `<p>Dòng xe tương thích: ${item.product.compatibleModels.map(model => 
-                    `${model.carModelName} (${model.years.join(', ')})`
-                  ).join(', ')}</p>` 
-                  : ''
-                }
-                <p>Giá: ${item.price.toLocaleString('vi-VN')} VND x ${item.quantity}</p>
-                <p>Tổng: ${(item.price * item.quantity).toLocaleString('vi-VN')} VND</p>
-              </div>
-            `).join('')}
-          </div>
-
-          <div style="font-size: 18px; font-weight: bold; color: #28a745;">
-            Tổng tiền: ${order.totalAmount.toLocaleString('vi-VN')} VND
-          </div>
-
-          ${order.notes ? `<div style="margin-top: 20px;"><strong>Ghi chú:</strong> ${order.notes}</div>` : ''}
-        </div>
-
-        <p>Chúng tôi sẽ liên hệ với bạn trong thời gian sớm nhất để cung cấp báo giá chi tiết.</p>
-      </div>
-    `
+    subject: `${BRAND_NAME} | Xác nhận liên hệ đơn hàng`,
+    html: orderCustomerTemplate(order)
   };
 
   // Admin notification email
   const adminEmail = {
     from: process.env.EMAIL_USER,
     to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
-    subject: `Đơn hàng mới #${order.orderNumber} - LocGioGiaSi`,
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #dc3545;">Đơn hàng mới cần xử lý!</h2>
-        
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 5px;">
-          <h3 style="color: #007bff; margin-top: 0;">Đơn hàng #${order.orderNumber}</h3>
-          
-          <div style="margin-bottom: 20px;">
-            <strong>Thông tin khách hàng:</strong>
-            <p>Họ tên: ${order.customer.name}</p>
-            ${order.customer.email ? `<p>Email: ${order.customer.email}</p>` : '<p>Email: Không cung cấp</p>'}
-            <p>Số điện thoại: ${order.customer.phone}</p>
-            ${order.customer.address || order.customer.city ? 
-              `<p>Địa chỉ: ${[order.customer.address, order.customer.city].filter(Boolean).join(', ')}</p>` 
-              : '<p>Địa chỉ: Không cung cấp</p>'
-            }
-          </div>
-
-          <div style="margin-bottom: 20px;">
-            <strong>Sản phẩm:</strong>
-            ${order.items.map(item => `
-              <div style="border-bottom: 1px solid #dee2e6; padding: 10px 0;">
-                <p><strong>${item.product.name}</strong></p>
-                <p>Mã sản phẩm: ${item.product.code}</p>
-                <p>ID: ${item.product._id}</p>
-                <p>Thương hiệu: ${item.product.brand ? item.product.brand.name : 'Chưa xác định'}</p>
-                ${item.product.compatibleModels && item.product.compatibleModels.length > 0 ? 
-                  `<p>Dòng xe tương thích: ${item.product.compatibleModels.map(model => 
-                    `${model.carModelName} (${model.years.join(', ')})`
-                  ).join(', ')}</p>` 
-                  : ''
-                }
-                <p>Giá: ${item.price.toLocaleString('vi-VN')} VND x ${item.quantity}</p>
-                <p>Tổng: ${(item.price * item.quantity).toLocaleString('vi-VN')} VND</p>
-              </div>
-            `).join('')}
-          </div>
-
-          <div style="font-size: 18px; font-weight: bold; color: #28a745;">
-            Tổng tiền: ${order.totalAmount.toLocaleString('vi-VN')} VND
-          </div>
-
-          ${order.notes ? `<div style="margin-top: 20px;"><strong>Ghi chú:</strong> ${order.notes}</div>` : ''}
-          
-          <div style="margin-top: 20px;">
-            <strong>Thời gian đặt:</strong> ${new Date(order.orderDate).toLocaleString('vi-VN')}
-          </div>
-        </div>
-      </div>
-    `
+    subject: `${BRAND_NAME} | Đơn hàng mới từ khách hàng ${order.customer.name}`,
+    html: orderAdminTemplate(order)
   };
 
   // Send emails - always send admin email, only send customer email if email is valid
