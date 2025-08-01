@@ -6,19 +6,27 @@ API RESTful cho hệ thống quản lý cửa hàng lọc gió ô tô LocGioGiaS
 
 **Base URL:** `http://localhost:3000/api`
 
-**API Version:** 1.0.1
+**API Version:** 1.1.0
 
-**Cập nhật gần nhất:** 2025-07-15
+**Cập nhật gần nhất:** 2025-07-30
 
-### Thay đổi gần nhất:
-- ✅ **Product Sorting**: Thêm chức năng sắp xếp sản phẩm theo nhiều tiêu chí (v1.0.1)
+### Thay đổi gần nhất (v1.1.0):
+- ✅ **Flexible Customer Info**: Email không còn bắt buộc cho orders và contacts
+- ✅ **Smart Email Handling**: Chỉ gửi email xác nhận khi email hợp lệ
+- ✅ **Simplified Validation**: Order chỉ cần tên + SĐT, contact chỉ cần tên + SĐT
+- ✅ **Address Optional**: Địa chỉ và thành phố không còn bắt buộc
+- ✅ **Error Reduction**: Loại bỏ lỗi "Invalid email format" khi email trống
+- ✅ **Phone-First Design**: Tối ưu cho đặt hàng qua điện thoại
+
+### Thay đổi trước (v1.0.1):
+- ✅ **Product Sorting**: Thêm chức năng sắp xếp sản phẩm theo nhiều tiêu chí
 
 ### Tính năng chính:
 - ✅ **Product Management**: Quản lý sản phẩm lọc gió với upload hình ảnh
-- ✅ **Order Processing**: Xử lý đơn hàng với email automation
+- ✅ **Flexible Order Processing**: Đặt hàng đơn giản với chỉ tên + SĐT, email automation thông minh
 - ✅ **Brand & Car Models**: Quản lý hãng xe và dòng xe tương thích
 - ✅ **Blog System**: Hệ thống blog với quản lý nội dung
-- ✅ **Contact Form**: Form liên hệ với email notification
+- ✅ **Simple Contact Form**: Form liên hệ linh hoạt với email notification thông minh
 - ✅ **Admin Authentication**: JWT-based authentication
 - ✅ **Statistics Dashboard**: Thống kê và báo cáo chi tiết
 - ✅ **File Upload**: Cloudinary integration cho hình ảnh
@@ -369,13 +377,13 @@ Các route admin yêu cầu authentication:
 ```json
 {
   "customer": {
-    "name": "Nguyễn Văn A",
-    "email": "customer@example.com",
-    "phone": "0123456789",
-    "address": "123 Đường ABC",
-    "city": "Hồ Chí Minh",
-    "district": "Quận 1",
-    "ward": "Phường Bến Nghé"
+    "name": "Nguyễn Văn A",        // Required
+    "phone": "0123456789",         // Required
+    "email": "customer@example.com", // Optional
+    "address": "123 Đường ABC",     // Optional
+    "city": "Hồ Chí Minh",         // Optional
+    "district": "Quận 1",          // Optional
+    "ward": "Phường Bến Nghé"      // Optional
   },
   "items": [
     {
@@ -383,10 +391,22 @@ Các route admin yêu cầu authentication:
       "quantity": 2
     }
   ],
-  "notes": "Ghi chú đặc biệt",
-  "paymentMethod": "cash"
+  "notes": "Ghi chú đặc biệt",      // Optional
+  "paymentMethod": "cash"           // Optional, default: "cash"
 }
 ```
+
+**Validation Rules:**
+- **Required fields**: `customer.name`, `customer.phone`, `items` (array with at least 1 item)
+- **Optional fields**: `customer.email`, `customer.address`, `customer.city`, `customer.district`, `customer.ward`, `notes`, `paymentMethod`
+- **Email validation**: Chỉ kiểm tra format khi email được cung cấp
+- **Phone validation**: Must match pattern `/^[\d\s\-\+\(\)]{10,}$/`
+- **Items validation**: Mỗi item phải có `productId` và `quantity` (số nguyên dương)
+
+**Email Automation:**
+- **Admin notification**: Luôn được gửi với tất cả thông tin
+- **Customer confirmation**: Chỉ gửi khi email hợp lệ được cung cấp
+- **Error handling**: Đơn hàng vẫn tạo thành công ngay cả khi gửi email thất bại
 
 **Response:**
 ```json
@@ -406,6 +426,27 @@ Các route admin yêu cầu authentication:
       "orderDate": "2024-07-12T10:30:00.000Z"
     }
   }
+}
+```
+
+**Error Responses:**
+```json
+// Missing required fields
+{
+  "success": false,
+  "message": "Missing required customer fields: name, phone"
+}
+
+// Invalid phone format  
+{
+  "success": false,
+  "message": "Invalid phone number format"
+}
+
+// Product not found
+{
+  "success": false,
+  "message": "Product with ID 64a7b8c9d1e2f3g4h5i6j7k8 not found"
 }
 ```
 
@@ -592,13 +633,24 @@ Các route admin yêu cầu authentication:
 **Request Body:**
 ```json
 {
-  "name": "Nguyễn Văn A",
-  "email": "customer@example.com",
-  "phone": "0123456789",
-  "subject": "Hỏi về sản phẩm",
-  "message": "Tôi muốn hỏi về lọc gió cho xe Toyota Camry 2020"
+  "name": "Nguyễn Văn A",           // Required
+  "phone": "0123456789",           // Required
+  "email": "customer@example.com", // Optional
+  "subject": "Hỏi về sản phẩm",    // Optional
+  "message": "Tôi muốn hỏi về lọc gió cho xe Toyota Camry 2020" // Optional
 }
 ```
+
+**Validation Rules:**
+- **Required fields**: `name`, `phone`
+- **Optional fields**: `email`, `subject`, `message`
+- **Email validation**: Chỉ kiểm tra format khi email được cung cấp
+- **Flexible contact**: Khách hàng có thể liên hệ chỉ với tên và số điện thoại
+
+**Email Automation:**
+- **Admin notification**: Luôn được gửi với tất cả thông tin có sẵn
+- **Customer confirmation**: Chỉ gửi khi email hợp lệ được cung cấp
+- **Smart handling**: Xử lý gracefully khi thiếu subject hoặc message
 
 **Response:**
 ```json
@@ -614,9 +666,36 @@ Các route admin yêu cầu authentication:
 }
 ```
 
+**Error Responses:**
+```json
+// Missing required fields
+{
+  "success": false,
+  "message": "Validation errors",
+  "errors": [
+    {
+      "field": "name",
+      "message": "Tên là bắt buộc"
+    },
+    {
+      "field": "phone", 
+      "message": "Số điện thoại là bắt buộc"
+    }
+  ]
+}
+
+// Email service error (rare)
+{
+  "success": false,
+  "message": "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại sau.",
+  "error": "Email service unavailable"
+}
+```
+
 **Lưu ý:** 
 - Hệ thống chỉ gửi email thông báo đến admin, không lưu thông tin liên hệ vào database
 - Email được gửi qua Gmail SMTP với thông tin cấu hình từ biến môi trường
+- Form hoạt động tốt ngay cả khi chỉ có tên và số điện thoại
 
 ### 7. Settings (`/api/settings`)
 

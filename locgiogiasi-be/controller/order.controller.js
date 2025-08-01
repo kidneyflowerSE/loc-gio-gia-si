@@ -3,6 +3,13 @@ const Product = require('../models/product.model');
 const nodemailer = require('nodemailer');
 const { validationResult } = require('express-validator');
 
+// Helper function to validate email
+const isValidEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email.trim());
+};
+
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
   service: 'gmail', // or your email service
@@ -138,9 +145,12 @@ const sendOrderNotification = async (order) => {
           <div style="margin-bottom: 20px;">
             <strong>Thông tin khách hàng:</strong>
             <p>Họ tên: ${order.customer.name}</p>
-            <p>Email: ${order.customer.email}</p>
+            ${order.customer.email ? `<p>Email: ${order.customer.email}</p>` : ''}
             <p>Số điện thoại: ${order.customer.phone}</p>
-            <p>Địa chỉ: ${order.customer.address}, ${order.customer.city}</p>
+            ${order.customer.address || order.customer.city ? 
+              `<p>Địa chỉ: ${[order.customer.address, order.customer.city].filter(Boolean).join(', ')}</p>` 
+              : ''
+            }
           </div>
 
           <div style="margin-bottom: 20px;">
@@ -189,9 +199,12 @@ const sendOrderNotification = async (order) => {
           <div style="margin-bottom: 20px;">
             <strong>Thông tin khách hàng:</strong>
             <p>Họ tên: ${order.customer.name}</p>
-            <p>Email: ${order.customer.email}</p>
+            ${order.customer.email ? `<p>Email: ${order.customer.email}</p>` : '<p>Email: Không cung cấp</p>'}
             <p>Số điện thoại: ${order.customer.phone}</p>
-            <p>Địa chỉ: ${order.customer.address}, ${order.customer.city}</p>
+            ${order.customer.address || order.customer.city ? 
+              `<p>Địa chỉ: ${[order.customer.address, order.customer.city].filter(Boolean).join(', ')}</p>` 
+              : '<p>Địa chỉ: Không cung cấp</p>'
+            }
           </div>
 
           <div style="margin-bottom: 20px;">
@@ -228,11 +241,17 @@ const sendOrderNotification = async (order) => {
     `
   };
 
-  // Send both emails
-  await Promise.all([
-    transporter.sendMail(customerEmail),
-    transporter.sendMail(adminEmail)
-  ]);
+  // Send emails - always send admin email, only send customer email if email is valid
+  const emailPromises = [transporter.sendMail(adminEmail)];
+  
+  // Only send customer email if email is valid
+  if (isValidEmail(order.customer.email)) {
+    emailPromises.push(transporter.sendMail(customerEmail));
+  } else {
+    console.log('Skipping customer email - invalid or missing email:', order.customer.email);
+  }
+  
+  await Promise.all(emailPromises);
 };
 
 // Get order by order number (for customer)
