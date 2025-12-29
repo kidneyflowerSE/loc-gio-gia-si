@@ -29,7 +29,7 @@ setTimeout(createDefaultAdmin, 2000);
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: process.env.CORS_ORIGIN || 'https://loc-gio-gia-si-camc.vercel.app/',
   credentials: true
 }));
 
