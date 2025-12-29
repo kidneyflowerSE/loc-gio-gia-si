@@ -9,7 +9,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
-    const backend = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api';
+    const backend = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://loc-gio-be-production.up.railway.app/api';
     return [
       {
         source: '/api/:path*',
