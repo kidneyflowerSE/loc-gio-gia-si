@@ -27,11 +27,46 @@ connectDatabase();
 // Create default admin after database connection
 setTimeout(createDefaultAdmin, 2000);
 
-// Middleware
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'https://loc-gio-gia-si-camc.vercel.app/',
-  credentials: true
-}));
+// CORS configuration
+// Check if CORS_ORIGIN is set to wildcard
+const corsOrigin = process.env.CORS_ORIGIN;
+
+if (corsOrigin === '*') {
+  // Allow all origins
+  app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+} else {
+  // Use specific allowed origins for better security
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://loc-gio-gia-si-camc.vercel.app',
+    'https://loc-gio-gia-si-camc.vercel.app/',
+    corsOrigin
+  ].filter(Boolean);
+
+  // Middleware
+  app.use(cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, Postman, or curl)
+      if (!origin) return callback(null, true);
+
+      // Check if origin is in allowed list or matches pattern
+      if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+}
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
