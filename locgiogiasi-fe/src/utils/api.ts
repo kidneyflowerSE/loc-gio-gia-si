@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://loc-gio-be-production.up.railway.app/api',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://loc-gio-gia-si-btx3.vercel.app/api',
 });
 
 // Attach token automatically
